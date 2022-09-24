@@ -1,0 +1,19 @@
+p {
+    margin-bottom: 5px;
+}
+
+ol {
+    margin-left: 15px;
+    margin-right: 15px;
+}
+
+.post-description {
+    margin-bottom: 50px;
+    color: lightslategray;
+    text-align: center;
+ }
+
+ h5 {
+    margin-top: 30px;
+    margin-bottom: 10px;
+ }

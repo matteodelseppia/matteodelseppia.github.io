@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="utf-8">
+  <title>Notes on Principal Component Analysis</title>
+  <meta name="description" content="notes on principal component analysis">
+  <meta name="author" content="Matteo Del Seppia">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+  </script>
+
+  <link href="https://fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+
+  <link rel="stylesheet" href="../css/normalize.css">
+  <link rel="stylesheet" href="../css/skeleton.css">
+  <link rel="stylesheet" href="../css/post.css">
+
+  <link rel="icon" type="image/png" href="../images/notes.png">
+
+</head>
+<body>
+
+  <div class="container">
+    <header style="margin: auto; text-align: center; margin-top: 30px;"><h3>Notes on Principal Component Analysis</h3></header>
+    <p class="post-description">Notes on the PCA tool based on 
+        <a href="https://arxiv.org/pdf/1404.1100.pdf">this publication</a> by Jonathon Shlens.
+      </p>
+
+    <h4>0. Disclaimer</h4>
+    <p>
+        PCA is designed to work under these assumptions:
+        <ul>
+            <li>
+                <b>Linearity</b>: this allows us to frame the problem into a change of basis
+            </li>
+
+            <li>
+                <b>Features with high variance are more important than the ones with low variance</b> (not every problem has this property)
+            </li>
+
+            <li>
+                <b>The principal components are orthogonal</b>
+            </li>
+        </ul>
+    </p>
+    <br>
+    <h4>1. Defining the problem</h4>
+    <p>
+        We have a dataset of instances, each one with <i>m</i> features. 
+        Our goal is to find the best basis to re-express a dataset, hoping that it will filter out the noise and reveal hidden information.
+    </p>
+
+    <p>
+        We know from linear algebra that any <i>m</i>-dimensional vector (instance, in this case) lies in an m-dimensional space spanned
+        by some orthonormal basis. 
+        This naive basis can be expressed as:
+        $$ B = 
+           \begin{bmatrix} 
+            b_1 \\
+            ... \\
+            b_m 
+           \end{bmatrix} = 
+           I
+           $$
+
+           where each row is an orthonormal basis vector with <i>m</i> components.
+    </p>
+    <p>
+        Is there <b>another basis</b> which is a linear combination of the original basis, that can best
+        transform our dataset?
+    </p>
+
+    <p>Let <b>X</b> be the original dataset. <b>X</b> is a matrix of dimensions <i>m x n</i> and each of its columns is a sample.
+        Now let <b>Y</b> be another matrix with the same dimensions related to <b>X</b> by a linear transformation <b>P</b>:
+        $$ PX = Y \text{,} $$ with:
+        $$ P = \begin{bmatrix} p_1 \\ ... \\ p_m \end{bmatrix} \text{,}$$
+        $$ X = \begin{bmatrix} x_1 & ...  & x_m \end{bmatrix} \text{,} $$
+        $$ Y = \begin{bmatrix} y_1 & ... & y_m \end{bmatrix} \text{,}$$
+        $$ \begin{bmatrix} p_1 \\ ... \\ p_m \end{bmatrix} \begin{bmatrix} x_1 & ...  & x_m \end{bmatrix} = Y \text{,} $$
+        $$ Y = \begin{bmatrix} p_1 \cdot x_1 & ... & p_1 \cdot x_n \\
+                               . & ... & . \\
+                               p_m \cdot x_1 & ... & p_m \cdot x_n   \end{bmatrix} $$
+
+    </p>
+
+    <p>
+        It's important to notice three things:
+        <ul>
+            <li><b>P</b> is a rotation and a stretch which transforms the original dataset <b>X</b> in its new form <b>Y</b></li>
+            <li>The rows of <b>P</b> are a set of a new basis vectors for expressing the columns of <b>X</b></li>
+            <li>as a consequence of the equality <b>PX = Y</b>, each column <i>i</i> of <b>Y</b> can be written as:
+            $$ \begin{bmatrix} p_1 \cdot x_i \\ ... \\  p_m \cdot x_i \end{bmatrix}$$</li>
+        </ul>
+    </p>
+
+    <p>
+        It is now clear that the row vectors of <b>P</b> have become the <i>principal components</i> of <b>X</b>. What is a good choice of <b>P</b>?
+        What features should <b>Y</b> exhibit? In general, we would like to reduce as much as possible the noise from the signal contained
+        in <b>X</b>. A valid intuition is to think <b>X</b> should be cleaned from redundancy (to be read as: noise), making <b>Y</b> able to show us
+        which are the features really contributing in changes in the data.
+    </p>
+
+    <p>
+        In arbitrarily high dimensions, we can quantify these notions through the concept of covariance. Covariance measures 
+        the degree of linear relationship between two variables. What's more, we know that the covariance of two random variables
+        is zero if and only if the variables are uncorrelated.
+    </p>
+
+    <p>
+        We can rethink <b>X</b> as being a matrix of <i>m</i> rows (features). This allows us to define the covariance matrix:
+        $$ C_X = \frac{1}{n} XX^T$$
+
+        with the following properties:
+        <ul>
+            <li>
+                the covariance matrix corresponding to our dataset <b>X</b> is a square symmetric <i>m x m</i> matrix
+            </li>
+
+            <li>
+                the <i>j-th</i> diagonal term of the covariance matrix is the variance of the feature <i>j</i>
+            </li>
+
+            <li>
+                <b>C<sub>X<sub>i,j</sub></sub></b> is the covariance between feature <i>i</i> and feature <i>j</i>
+            </li>
+        </ul>
+    </p>
+
+    <p>
+        Remember that we are still searching
+        for the best transformation <b>P</b> that can enlighten us about the hidden structure of our data. It is now clear that
+        the best transformation is the one that outputs <b>Y</b> from <b>X</b> such that the covariance matrix <b>C<sub>Y</sub></b> has
+        all its off-diagonal terms equal to zero and its diagonal terms rank-ordered according to variance, from highest to lowest.
+    </p>
+
+    <p>
+        Again, geometrically PCA acts as a generalized rotation to align a basis with the axis of maximal variance.
+    </p>
+
+    <br>
+    <br>
+    <h4>2. Diagonalization of the covariance matrix</h4>
+    <p>
+        PCA assumes that <b>P</b> is an orthonormal matrix. Begin rewriting <b>C<sub>Y</sub></b> in terms of the unknown variable <b>P</b>:
+        
+        $$ C_Y = \frac{1}{n}YY^T $$ 
+        $$ = \frac{1}{n}(PX)(PX)^T $$ 
+        $$ = \frac{1}{n}PXX^T P^T $$
+        $$ = P ( \frac{1}{n}XX^T)P^T $$
+        $$ = P C_X P^T $$   
+    </p>
+
+    <p>
+        We know from linear algebra that any symmetric matrix <b>A</b> is diagonalized by an orthogonal matrix of its eigenvectors.
+        The trick is to select <b>P</b> to be a matrix where each row <b>p<sub>i</sub></b> is an eigenvector of  <b>C<sub>X</sub></b>.
+        This means that:
+
+        $$ C_Y = PC_X P^T $$
+        $$ = P (P^T DP)P^T $$
+        $$ = (PP^T)D(PP^T) $$
+        $$ = (PP^{-1})D(PP^{-1}) $$
+        $$ = D $$
+
+        Our choice of <b>P</b> did succeed in diagonalizing <b>C<sub>Y</sub></b>. Note that D is a diagonal matrix where each diagonal
+        element is an eigenvalue of <b>C<sub>Y</sub></b>.
+        </p>
+        <p>
+        Finally, we can conclude that the principal components of <b>X</b> are the eigenvectors of its covariance matrix and the <i>i-th</i>
+        diagonal value of  <b>C<sub>Y</sub></b> is the variance of <b>X</b> along <b>p<sub>i</sub></b>.
+    </p>
+
+    <br>
+    <br>
+    <h4>3. Using PCA for feature selection in Python</h4>
+    <pre><code>
+from sklearn.datasets import fetch_openml
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import mean_absolute_error, mean_squared_error, accuracy_score
+
+df = fetch_openml('mnist_784')
+
+X = df.data
+y = df.target
+X_train, X_test, y_train, y_test = train_test_split(df.data, df.target, test_size=0.3, random_state=0)
+
+scaler = StandardScaler()
+scaler.fit(X_train)
+X_train = scaler.transform(X_train)
+X_test = scaler.transform(X_test)
+
+# choose the minimum number of principal components such that 95% of the variance is retained
+pca = PCA(.95) 
+
+pca.fit(X_train)
+X_train = pca.transform(X_train)
+X_test = pca.transform(X_test)
+
+model = LogisticRegression(max_iter=5000)
+
+model.fit(X_train, y_train)
+preds = model.predict(X_test)
+
+mae = mean_absolute_error(y_test, preds)
+mse = mean_squared_error(y_test, preds)
+acc = accuracy_score(y_test, preds)
+</code></pre>
+
+</div>
+</body>
+</html>

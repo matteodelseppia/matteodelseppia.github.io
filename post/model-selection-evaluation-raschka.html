@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="utf-8">
+  <title>Notes on Model Selection and Evaluation</title>
+  <meta name="description" content="notes on model selection and evaluation">
+  <meta name="author" content="Matteo Del Seppia">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+  </script>
+
+  <link href="https://fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+
+  <link rel="stylesheet" href="../css/normalize.css">
+  <link rel="stylesheet" href="../css/skeleton.css">
+  <link rel="stylesheet" href="../css/post.css">
+
+  <link rel="icon" type="image/png" href="../images/notes.png">
+
+</head>
+<body>
+
+  <div class="container">
+    <header style="margin: auto; text-align: center; margin-top: 30px;"><h3>Notes on Model Selection and Evaluation</h3></header>
+    <p class="post-description">A collection of methods and algorithms to conduct a clever model selection and evaluation, based on 
+      <a href="https://arxiv.org/abs/1811.12808">this paper</a> by Sebastian Raschka.
+    </p>
+
+
+    <h4>1. Basic model evaluation techniques</h4>
+    <h5>1.1 Assumptions and terminology</h5>
+
+    <p>
+      Our goal is to estimate the generalization performance of a model on future unseen data. We also would like to increase the predictive performance of a model by tuning the hyperparameters and selecting the best performing setup.
+
+We shall note that <b>biased performance estimates are perfectly okay in model selection</b>, because they still can tell us the relative performance of different models, although we may not be able to state their exact (unbiased) performances. 
+
+    </p>
+    <p>
+These methods are based on the <b>crucial assumption</b> that the training examples are <i>independent and identically distributed</i> (i.i.d.), which means that all examples have been drawn from the same probability distribution and are statistically independent from each other.
+    </p>
+
+    <p>
+      Later we will focus on prediction accuracy. In formal terms, we define prediction accuracy as:
+
+$$ ACC = 1-ERR $$ 
+
+where the prediction error <i>ERR</i> is computed as the expected value of the 0-1 loss function <i>L</i> over <i>n</i> examples in a dataset <i>S</i>:
+
+$$ ERR_S = \frac{1}{n} \ \sum_{i=1}^{n}L(y_i, \hat{y_i}) $$
+    </p>
+
+    <p>
+      Our goal is to find a model <i>h</i> that maximizes the prediction accuracy or, vice versa, minimizes the probability <i>C(h)</i> of making a wrong prediction:
+
+$$ C(h)=P_{(x, y) \sim D}[h(x) \ne y] $$
+
+where <i>D</i> is the generating distribution the dataset has been drawn from, <i>x</i> is the feature vector of a training example with a class label <i>y</i>.
+    </p>
+
+<p>
+  Throughout this notes, we use the term <i>bias</i> referring to the <i>statistical bias</i>. In general terms, the bias of an estimator is the difference between its expected value and the true value of the parameter being estimated:
+
+$$ \text{Bias} = E[\hat{\beta}] - \beta $$
+
+In a few words, we define prediction bias as the difference between the expected prediction accuracy of a model and its true prediction accuracy.
+</p>
+
+<h5>1.2 Holdout method</h5>
+<p>
+  First, we take a labeled dataset and split it into two parts: a <b>training set</b> and a <b>test set</b>. Then we fit a model to the training data and predict the labels of the test set. The fraction of correct predictions is our estimate of the model’s prediction accuracy.
+
+</p><p>Typically, the splitting of a dataset into training and test sets is a simple process of <b>random subsampling</b>. We assume that all data points have been drawn from the same probability distribution (with respect to each class). 
+
+The problems of this approach will be discussed later on.
+</p>
+
+<h5>1.3 Stratification</h5>
+<p>
+  Even if the initial dataset is perfectly balanced, creating the training and test sets using random subsampling may create balancing problems. In fact, since with random subsampling we are altering at each time the distribution of the classes in the dataset, both the dataset and the test set may turn out umbalanced. The problem becomes even worse if the original dataset was not balanced. 
+</p>
+
+<p>
+  A recommended practice is to divide the dataset in a stratified fashion. Stratification simply means that we randomly split a dataset such that each class is correctly represented in the resulting subsets.
+</p>
+
+<p>
+  It shall be noted that when we are working with relatively large and balanced datasets random subsampling is an issue (the change in probability distributions are irrelevant).
+</p>
+
+<h5>1.4 Holdout validation</h5>
+<p style="margin-bottom: 10px;">Here are the steps to conduct a holdout validation of a model:</p>
+<p>
+ <ol>
+   <li>Randomly divide our dataset in training and test set (possibly with stratified sampling)</li>
+   <li>Fix the hyperparameters and fit the model</li>
+   <li>Predict the test set labels and estimate the generalization accuracy and error</li>
+   <li>Train the model on the whole dataset. Since we assume i.i.d. samples, there is no reason to fear that the generalization error will be worse when feeding the model with more training data (<b>pessimistic bias</b>)</li>
+ </ol>
+
+ </p>
+
+<h5>1.5 Confidence intervals via normal approximation</h5>
+
+<p>
+  What if our estimate was particularly sensitive to the particular training-test split we used? To overcome this doubt, we can compute the confidence intervals of the predictive accuracy of a model via <i>normal approximation</i>. Here we assume the predictions follow a <b>normal</b> distribution.
+
+We consider <i>X</i> as the number of correct predictions at each trial. <i>X</i> is following a binomial distribution with <i>n</i> test samples, <i>k</i> trials and probability of success <i>p</i>:
+
+$$f(k;n,p)= \binom{n}{k}p^k(1-p)^{n-k}, \ k = 1,2,...,n$$
+
+The expected number of success is computed as $$ \mu = np $$ and the variance is $$ \sigma^2=np(1-p) $$
+
+Since we are interested in the <i>average</i> number of successes, not its absolute value, we compute the variance of the accuracy estimate as $$ \sigma^2 = \frac{1}{n}ACC_S(1-ACC_S) $$ Under the normal approximation, we can then compute the confidence interval as:
+
+$$ ACC_S \ \pm z \sigma = ACC_S \pm \sqrt{\frac{1}{n}ACC_S(1-ACC_S)} $$
+
+where <i>z</i> is the $$ 1-\frac{\alpha}{2} $$ quantile of a standard normal distribution and &alpha; is the error quantile. Typically a confidence interval of 5% is used with <i>z = 1.96</i>.
+In any case, we can notice that <b>having fewer samples in the test set increases the variance and thus widens the confidence interval</b> (look at the <i>n</i> at the denominator).
+</p>
+
+<h4 style="margin-top: 30px;">2. Bootstrapping and uncertainties</h4>
+
+<p>Before we start, notice that to use the resampling methods in case of regression analysis, we have to swap the accuracy by the <b>mean squared error</b>:
+
+$$ MSE_S = \frac{1}{n}\sum_{i=1}^n (\hat{y_i}-y_i)^2 $$
+</p>
+
+<p>As discussed before, resubstitution evaluation is heavily optimistically biased, while witholding a large part of the dataset as a test set may lead to pessimistically biased estimates. While reducing the test size may decrease the pessimistic bias, it will almost certainly increase the variance of the estimates. We are interested in a good trade-off between these two. </p>
+
+<h5>2.1 Repeated holdout validation</h5>
+<p>A more robust performance estimate that is less variant to how we split the data into training and test set is to repeat the holdout method <i>k</i> times with different random seeds and compute the average performance over these <i>k</i> repetitions:
+
+$$ ACC_{avg}=\frac{1}{k} \sum_{i=1}^k ACC_j $$
+
+where <i>ACC<sub>j</sub></i> is the accuracy of the <i>j-th</i> test set of size <i>m</i>:
+
+$$ ACC_j=1-\frac{1}{m} \sum_{i=1}^m L(\hat{y_i}, y_i) $$ 
+
+This method provides also a better information on the model’s stability.
+</p>
+
+<h5>
+  2.2 Bootstrap methods
+</h5>
+
+<p>
+  The bootstrap method is a resampling technique for estimating a sampling distribution, and in this case it is useful to estimate the uncertainty of a performance estimate. 
+
+</p><p style="margin-bottom: 20px;">In brief, the idea of the method is to generate new data from a population by repeated sampling from the original dataset with replacement - in contrast, repeated holdout method can be understood as sampling without replacement.
+</p>
+
+<div class="row">
+  <div class="six columns">
+    <p><b>Original bootstrap method:</b>
+      <ol>
+        <li>
+          We have a dataset of size <i>n</i>
+        </li>
+        <li>
+          For <i>b</i> bootstrap rounds:<br>
+          2.1 We draw one instance from this dataset and assign it to the <i>j</i> bootstrap sample. We repeat this step until our bootstrap sample has size <i>n</i>. Each time, we draw samples from the same original dataset such that certain examples may appear more than once in the bootstrap sample and some not at all.
+        </li>
+        <li>
+          We fit a model to each of the <i>b</i> bootstrap samples and compute resubstitution accuracy
+        </li>
+        <li>
+          We compute the model accuracy as the average over <i>b</i> accuracy estimates.
+        </li>
+      </ol>
+    </p>
+  </div>
+  <div class="six columns">
+    <p><b>Recommended bootstrap method:</b>
+      <ol>
+        <li>
+          We have a dataset of size <i>n</i>
+        </li>
+        <li>
+          For <i>b</i> bootstrap rounds:<br>
+          2.1 We draw one instance from this dataset and assign it to the <i>j</i> bootstrap sample. We repeat this step until our bootstrap sample has size <i>n</i>. Each time, we draw samples from the same original dataset such that certain examples may appear more than once in the bootstrap sample and some not at all.
+        </li>
+        <li>
+          We fit a model to each of the b bootstrap samples and compute accuracy <b>using as test set the instances left out of each bootstrap sample (out of bag instances)</b>
+        </li>
+        <li>
+          We compute the model accuracy as the average over <i>b</i> accuracy estimates.
+        </li>
+      </ol>
+    </p>
+  </div>
+
+  $$ ACC_{boot}=\frac{1}{b}\sum_{j=1}^b \frac{1}{n} \sum_{i=1}^n \big(1-L(\hat{y_i}, y_i) \big) $$
+
+  <p>
+    Taking a step back, let us assume that a sample has been drawn from a normal distribution. Using basic concepts from statistics, we use the sample mean  as an estimate of the population mean. Similarly, the variance is estimated with:
+
+$$ VAR = \frac{1}{n-1}\sum_{i=1}^n(x_i-\bar{x})^2 $$
+
+The standard error is computed through the standard deviation’s estimate:
+
+$$ SE = \frac{SD}{\sqrt{n}} $$
+
+Using standard error we can compute a 95% confidence interval of the mean according to:
+
+$$\bar{x} \ \pm z \frac{\sigma}{\sqrt{n}} =  \bar{x} \ \pm t *SE $$
+
+with <i>z=1.96</i>. We have to consult a t-table to lookup the actual value of <i>t</i>, which depends on the size of the sample <i>n</i> (<b>degrees of freedom</b>). For instance with <i>n=100</i> we have t = 1.984.
+  </p>
+
+  <p>
+    Similarly, we can compute the 95% confidence interval of the bootstrap estimate starting with the mean accuracy and use it to compute the standard error. Finally, we can compute the confidence interval around the mean estimate as $$ ACC_{boot} = t*SE_{boot} $$
+  </p>
+
+  <p>
+    <b>What if our samples do not follow a normal distribution</b>? In this case we can use the percentile method. Here, we pick the lower and upper confidence bounds as follows:
+
+$$  ACC_{lower} = \alpha_1  \text{ percentile of the $ACC_{boot}$ distribution} $$
+$$  ACC_{upper} = \alpha_2  \text{ percentile of the $ACC_{boot}$  distribution} $$
+
+where $$ \alpha_1 = \alpha, \ \alpha_2 = 1-\alpha $$ and &alpha; is the degree of confidence for computing the 100(1-2&alpha;) confidence interval. For instance, pick &alpha;=0.025 to obtain the 2.5th and 97.5th percentiles of the <i>b</i> bootstrap samples distribution as our upper and lower confidence bounds.
+
+In practice, if the data is indeed (roughly) following a normal distribution, the <i>standard</i> confidence interval and percentile method typically show a standard distribution of the values of the accuracies.
+  </p>
+
+  <p>
+    Now, it is known that the bootstrap cross-validation approach described above has a pessimistic bias on its estimate. This can be attributed to the fact that the bootstrap samples contain only approximately 63.2% of the unique samples from the original dataset. In fact, the probability for a sample of never being sorted out from the original dataset into a sample is $$ (1-\frac{1}{n})^n $$ , which converges to $$ 1/e \sim 0.368 \text{for $n \rightarrow \infty$} $$
+
+To address this problem, a <i>.632</i> estimate was proposed:
+
+$$ ACC_{boot} = \frac{1}{b} \sum_{i=1}^b (0.632 * ACC_{h,i} + 0.368*ACC_{r,i} ) $$
+
+where $$ ACC_{h, i} , \ ACC_{r, i} $$ are respectively the accuracy on the out of bag sample and the resubstitution accuracy.
+
+This last approach is unfortunately optimistically biased with models that tend to overfit. To overcome this, a <i>.632 + bootstrap</i> approach has been proposed, where instead of using a fixed weight &omega;=0.632 in:
+
+$$ ACC_{boot} = \frac{1}{b} \sum_{i=1}^b (\omega * ACC_{h,i} + (1-\omega)*ACC_{r,i} ) $$
+
+we compute the weight as 
+
+$$ \omega = \frac{0.632}{1-0.368*R'} $$
+
+where <i>R'</i> is the <b>relative overfitting rate</b>:
+
+$$ R' = \frac{-(ACC_{h,i} - ACC_{r,i})}{\gamma - (1-ACC_{h,i})} $$
+
+and &gamma; is the <b>no-information rate</b> that can be computed as:
+
+$$ \gamma = \sum_{k=1}^K p_k(1-q_k)$$
+
+where <i>p<sub>k</sub></i>, <i>q<sub>k</sub></i> are respectively the proportion of class <i>k</i> instances observed in the dataset and the proportion of class <i>k</i> instances that the classifier predicts in the dataset.
+  </p>
+
+  <h4 style="margin-top: 30px;">3. Cross-validation and hyperparameter optimization</h4>
+  <h5>3.1 Three-way holdout method for hyperparameter tuning</h5>
+  <p>
+    Hyperparameter optimization is another task to be conducted on the training/test splits. However, selecting the best hyperparamters setup
+    after reusing multiple times the same test set would introduce a bias and the final performance estimate would likely result overly
+    optimistic. To avoid this problem, a three-way split could be used, dividing the dataset into <b>training, test, and validation</b>
+    sets. Having a training-evaluation pair for hyperparameter tuning and model selections allows us to keep the test set independent
+    for model evaluation.
+  </p>
+
+  <p>
+    The steps for conducting a three-way split holdout method are the following:
+
+    <ol>
+      <li>
+        Start by splitting the dataset into three parts, a training set for model fitting, a validation set for model selection,
+        and a test set for the final evaluation of the selected model.
+      </li>
+
+      <li>
+        Use the learning algorithm with different hyperparameter settings to fit models to the training data.
+      </li>
+
+      <li>
+        Evaluate performance of the models on the validation set. After comparing the performance estimates, we choose
+        the hyperparamter setup associated with the best performance. 
+      </li>
+
+      <li>
+        To avoid part of the pessimistic bias on the estimate, merge training and validation set after model selection and use
+        the best hyperparameter settings from the previous step to fit a model on this larger dataset.
+      </li>
+
+      <li>
+        Use the independent test set to estimate the generalization performance of our model. 
+      </li>
+
+      <li>
+        Finally, make use of all our data to fit a model for real-world use.
+      </li>
+    </ol>
+  </p>
+
+  <h5>3.2 Introduction to k-fold Cross-Validation</h5>
+  <p>
+    In <i>k</i>-fold cross-validation we iterate over a dataset <i>k</i> times. In each round, we split the dataset into <i>k</i>
+    parts: one part is used for validation, and the remaining <i>k - 1</i> parts are merged into a training subset for model evaluation.
+    This procedure will result in <i>k</i> different models fitted; eventually we compute the cross-validation performance as the 
+    arithmetic mean over the <i>k</i> performance estimates from the validation sets.
+    The idea behind this method is to reduce the pessimistic bias by using more training data in contrast to setting aside a relatively
+    large portion of the dataset as test data. And in contrast to repeated holdout method, test folds here are not overlapping.
+    In fact in repeated holdout the repeated use of samples for testing results in performance estimates that become dependent
+    between rounds, which is problematic for statistical comparisons.
+  </p>
+
+  <p>
+    A very special case for cross validation is the one where <i>k = n</i>, also known as <i>Leave-one-out-cross-validation</i>. 
+    In each iteration of LOOCV a model is fitted on <i>n - 1</i> samples of the dataset and evaluated on the single remaining instance.
+    Although this process is computationally expensive, it has proven to be useful in cases where the dataset is so small that 
+    witholding data from the training set would be too wasteful.
+  </p>
+  <p>
+    If the dataset is sufficiently large, we can say as a rule of thumb that pessimistic bias and large variance concerns regarding
+    the holdout method estimates are less problematic. 
+    Moreover, it isn't uncommon to repeat the cross-validation many times, for example repeating 5-fold cross-validation for 100 times,
+    and take as performance estimate the arithmetic mean (note that in this case the test folds are now overlapping).
+  </p>
+  <p>
+    However, there is no point in repeating LOOCV, since LOOCV always produces the same splits.
+  </p>
+
+  <h5>3.3 k-fold Cross-Validation and the Bias-Variance trade-off</h5>
+  <p>
+    We can think of the LOOCV estimate as being approximately unbiased: the pessimistic bias of LOOCV is intuitively lower
+    compared to <i>k < n</i> cross-validation, since almost all training samples are available for model fitting.
+  </p>
+
+  <p>
+    One downside of using LOOCV over standard k-fold cross-validation is the large variance of the LOOCV estimate (referring to
+    the variance between folds). This is obviously because the test is conducted on a single observation at each round. 
+  </p>
+
+  <p>
+    In statistic terms, we can attribute the high variance to the fact that the mean of highly-correlated variables has a higher variance
+    than the mean of variables that are not highly correlated. This can be intuitively explained by looking at the relationship
+    between covariance and variance:
+    $$ \text{cov}_{X,X} = \sigma_X^2 $$
+    $$ \text{cov}_{X,X} = E[(X - \mu)^2] = \sigma_X^2 $$
+    $$ \text{cov}_{X,Y} = \rho_{X,Y} \sigma_X \sigma_Y $$
+    $$ \rho_{X,Y} = E[(X-\mu_X)(Y - \mu_Y)] / (\sigma_X \sigma_Y) $$
+  </p>
+
+  <p>
+    Literature suggests that a 10-fold cross validation offers the best trade-off between bias and variance. Furthermore, researchers
+    have found that repeating k-fold cross-validation can increase the precision of the estimates while still maintaining a small bias.
+  </p>
+
+  <p>
+    In summary:
+    <ul>
+      <li>
+        Bias (pessimistic) decreases when <i>k</i> is increased
+      </li>
+      <li>
+        Variance increases when <i>k</i> is increased
+      </li>
+      <li>
+        Computational cost increases when <i>k</i> is increased
+      </li>
+      <li>
+        Exception: decreasing <i>k</i> to small values of 2,3 also increases the variance on small datasets due to random sampling effects
+      </li>
+    </ul>
+  </p>
+
+  <p><b>Model selection via k-fold cross-validation:</b></p>
+  <p>
+    <ol>
+      <li>
+        Split the dataset into two parts, a training and an independent test set to be used in the final model evaluation step.
+      </li>
+
+      <li>
+        Experiment with various hyperparameter settings; for each configuration, apply k-fold cross-validation method on the training
+        set, resulting in multiple models and performance estimates.
+      </li>
+
+      <li>
+        Taking the hyperparameter settings that produced the best results, we can now use the complete training set for model fitting.
+      </li>
+
+      <li>
+        Use the independent test set from step 1 to evaluate the model obtained in step 3.
+      </li>
+
+      <li>
+        Finally, after completing the evaluation stage, we can fit a model to all data for deployment.
+      </li>
+    </ol>
+
+    When selecting the best model, remember to apply the <b>law of parsimony</b>:
+    </p>
+    <p>
+    <ul>
+      <li>
+        Consider the optimal estimate and its standard error
+      </li>
+      <li>
+        Select the model whose performance is within one standard error of the value obtained in step 1, preferring
+        simpler models to more complicated ones.
+      </li>
+    </ul>
+  </p>
+
+  <h5>3.4 About feature selection during model selection</h5>
+  <p>
+    Note that if we normalize data or select features, we typically perform these operations <b>inside the k-fold cross-validation loop 
+    in contrast to the whole dataset upfront before splitting the data into folds</b>.
+    Feature selection inside the loop reduces the bias through overfitting since it avoids peaking at the test data information
+    during the training stage. However, feature selection inside the loop may lead to an overly pessimistic estimate, since less
+    data is available for training. 
+    More can be found in the paper <a href="https://www.aaai.org/Papers/Workshops/2007/WS-07-05/WS07-05-007.pdf">"On Comparison of Feature Selection Algorithms"</a> on this argument.
+  </p>
+</div>
+</body>
+</html>

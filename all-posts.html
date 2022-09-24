@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="utf-8">
+  <title>ML Notes | All posts</title>
+  <meta name="description" content="machine learning notes">
+  <meta name="author" content="Matteo Del Seppia">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link href="https://fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+
+  <link rel="stylesheet" href="css/normalize.css">
+  <link rel="stylesheet" href="css/skeleton.css">
+  <link rel="stylesheet" href="css/homepage.css">
+
+  <link rel="icon" type="image/png" href="images/notes.png">
+
+</head>
+<body>
+
+  <div class="container" style="padding: 0; width: 100%; max-width: none;">
+
+    <div class="row">
+      <div id="left-side" class="five columns">
+        <div id="information">
+          <p id="all-posts-label">/all-posts</p>
+        </div>
+      </div>
+      <div id="right-side" class="seven columns">
+        <h4 style="width: 80%; text-align: center; display: block; margin: auto; margin-top: 50px;">Notes on Machine Learning</h4>
+    
+        <div class="row top-post">
+          <a class="post-title" href="post/model-selection-evaluation-raschka.html"><h5>Notes on Model Selection and Evaluation</h5></a>
+          <p style="margin-bottom: 10px;">A collection of methods and algorithms to conduct a clever model selection and evaluation, based on 
+            <a href="https://arxiv.org/abs/1811.12808">this publication</a> by Sebastian Raschka.
+          </p>
+          <p style="color: rgb(157, 157, 157);">09/22/22</p>
+        </div>
+        <hr>
+    
+        <div class="row post-title">
+          <a class="post-title" href="post/principal-component-analysis.html"><h5>Notes on Principal Component Analysis</h5></a>
+          <p style="margin-bottom: 10px;">Notes on the PCA tool based on 
+            <a href="https://arxiv.org/pdf/1404.1100.pdf">this publication</a> by Jonathon Shlens.
+          </p>
+          <p style="color: rgb(157, 157, 157);">09/23/22</p>
+        </div>
+        <hr>
+
+
+      </div>
+    </div>
+
+  </div>
+
+</body>
+
+<script>
+  if (window.innerWidth > 550) {
+    let height = document.getElementById("right-side").offsetHeight;
+    document.getElementById("left-side").setAttribute("style", "height: " + height + "px;")
+  }
+</script>
+</html>

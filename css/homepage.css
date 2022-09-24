@@ -1,0 +1,60 @@
+.top-post {
+    margin-top: 100px;
+    margin: 20px;
+}
+
+.post-title {
+    text-decoration: none;
+    color: black;
+    margin: 20px;
+}
+
+.post-title :hover {
+    color: rgb(83, 83, 83);
+}
+
+#left-side {
+    background: #667db6;  /* fallback for old browsers */
+    background: -webkit-linear-gradient(to right, #667db6, #0082c8, #0082c8, #667db6);  /* Chrome 10-25, Safari 5.1-6 */
+    background: linear-gradient(to right, #667db6, #0082c8, #0082c8, #667db6); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+    height: 100vh;
+    min-height: 750px;
+}
+
+#right-side {
+    background-color: white;
+}
+
+.info {
+    font-family: "Raleway";
+    color: whitesmoke;
+    font-weight: bold;
+    font-size: 25px;
+    width: max-content;
+    margin: auto;
+    display: block;
+ }
+
+ #github-button {
+    width: max-content; 
+    display: block; 
+    margin: auto;
+    margin-top: 25px;
+    background-color: lightsalmon;
+    color: white;
+ }
+
+ #posts-button {
+    display: block;
+    margin: auto;
+    margin-bottom: 50px;
+ }
+
+ #all-posts-label {
+    margin-top: 35%;
+    margin-left: 5%;
+    display: block;
+    font-family: "Raleway";
+    font-size: 60px;
+    color: white;
+ }
