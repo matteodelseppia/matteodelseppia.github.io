@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="utf-8">
+  <title>Notes on Linear Regression Methods</title>
+  <meta name="description" content="notes on linear regression methods">
+  <meta name="author" content="Matteo Del Seppia">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+  </script>
+
+  <link href="https://fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+
+  <link rel="stylesheet" href="../css/normalize.css">
+  <link rel="stylesheet" href="../css/skeleton.css">
+  <link rel="stylesheet" href="../css/post.css">
+
+  <link rel="icon" type="image/png" href="../images/notes.png">
+
+</head>
+<body>
+
+  <div class="container">
+    <header style="margin: auto; text-align: center; margin-top: 30px;"><h3>Notes on Linear Regression Methods</h3></header>
+    <p class="post-description">
+        Least squares, ridge regression and lasso regression formulations, approached via both statistics and convex optimization.
+        Partly based on Chapter 3 of <a href="https://hastie.su.domains/ElemStatLearn/"><i>Elements of Statistical Learning</i></a>.
+    </p>
+
+    <h4>
+        1. Least Squares
+    </h4>
+
+    <h5>1.1 Least Squares for Linear Regression in Statistical Learning</h5>
+
+    <p>
+        We have an input vector <b>X</b> of <i>p</i>-dimensions. Our goal is to predict a real-valued output <b>Y</b>. Our linear regression
+        model has the form:
+        $$ f(X) = \beta_0 + \sum_{j=1}^p X_j \beta_j $$
+
+        We can see that we search for a model that assigns a <i>weight</i> to each feature to predict the output. 
+    </p>
+
+    <p>
+        Typically we have a set of <b>training</b> data <i>( x<sub>i</sub>, y<sub>i</sub> )</i>  for <i>i = 1...N</i>, from which we want
+        to estimate the true parameters of our linear model. The most popular method to do this is the <i>least squares</i> method, where
+        the coefficients &beta; minimize the residual sum of squares: 
+        $$ RSS(\beta) = \sum_{i=1}^N (y_i - f(x_i))^2 $$
+        $$ = \sum_{i=1}^N \big( y_i - \beta_0 - \sum_{j=1}^p x_{ij}\beta_j \big)^2$$
+    </p>
+
+    <p>
+        To minimize <b>RSS</b>, we can express it as:
+        $$ RSS(\beta) = (y - X \beta)^T(y - X \beta) , \ \ \
+         X = \begin{bmatrix} 1 & x_{11} & ... & x_{1p} \\  
+                             1 & x_{21} & ... & x_{2p} \\
+                             . & . & ... & . \\
+                             1 & x_{N1} & ... & x_{Np}
+         \end{bmatrix} = \text{training set matrix}$$
+
+         We can see that <b>RSS</b> is a quadratic function. Its gradient and Hessian with respect to &beta; are:
+         $$ \nabla RSS  = -2X^T(y - X \beta) $$
+         $$ \nabla^2 RSS = 2XX^T $$
+    </p>
+
+    <p>
+        From convex optimization theory we know that if <b>XX<sup>T</sup></b> is postive definite then <b>RSS</b> is strongly convex
+        and has a unique global optimum zeroing the gradient:
+        $$ X^T(y - X \beta) = 0 \implies \hat{\beta} = (X^T X)^{-1} X^T y $$
+
+        Remember that we are assuming that <b>X</b> is nonsingular, but in practice this is not a restrictive assumption.
+    </p>
+
+    <p>Now that we have our estimate of the parameters &beta; we can estimate the true signal:
+        $$ \hat{y} = X \hat{\beta} = X (X^T X)^{-1} X^T y = Hy \ \ \text{(H is known as hat matrix)}$$
+
+        Geometrically, the hat matrix computes the orthogonal projection of the training vector of outputs <b>y</b> on the subspace of <b>R<sup>N</sup></b> spanned
+        by the training inputs <b>X</b>. This is why <b>H</b> is also known as <i>projection matrix</i>.
+    </p>
+
+    <p>
+        What if the training set matrix is singular? In that case the solution of the unconstrained minimization problem is not uniquely
+        defined, but the fitted values are still the projection of <b>y</b> onto the column space of <b>X</b>; there is just more than 
+        one way to express that projection in terms of the column vectors of <b>X</b>.
+        A common way to solve this is dropping the redundant columns in <b>X</b>.
+    </p>
+
+    <p>
+        To study the sampling properties of our estimate, we now assume that the training outputs are uncorrelated and have constant 
+        variance &sigma;<sup>2</sup>, and that the <i>x<sub>i</sub></i> are fixed (non-random). The covariance matrix of the least squares
+        can be derived in this way:
+
+        $$ \hat{\beta} = (X^T X)^{-1} X^T y $$
+        $$  = (X^T X)^{-1} X^T (X \beta + \epsilon) $$
+        $$ = \beta + (X^T X)^{-1} X^T \epsilon $$ 
+        $$ \text{with $E(\epsilon) = 0$ and $ V(\epsilon) = \sigma^2 I $} $$
+
+        $$ \ $$
+        $$ V(\hat{\beta}) = V((X^T X)^{-1} X^T \epsilon) $$
+        
+        $$ = ((X^T X)^{-1} X^T) \  V(\epsilon) \ ((X^T X)^{-1} X^T)^T  $$
+        $$ = \sigma^2 \ ((X^T X)^{-1} X^T) \ I \  ((X^T X)^{-1} X^T)^T $$
+        $$ = \sigma^2 \ (X^T X)^{-1}(X^T X)(X^T X)^{-1} $$
+        $$ = \sigma^2 \ (X^T X)^{-1} $$ 
+
+        with &sigma;<sup>2</sup> typically estimated with:
+        $$ \hat{\sigma}^2 = \frac{1}{N-p-1} \sum_{i=1}^N (y_i - \hat{y_i})^2 \ ,$$
+        $$ E(\hat{\sigma}^2) = \sigma^2 \ \ \ \text{(the estimate is unbiased)} $$
+    </p>
+
+    <br>
+    <p>
+        To make additional inferences about the parameters we have to add two assumptions:
+        <ul>
+            <li>
+                the conditional expectation of <b>Y</b> is linear in <b>X<sub>1</sub>, ... , X<sub>p</sub></b>, meaning that we are certain
+                that the true signal is a linear function given the features of the input data;
+            </li>
+
+            <li>
+                the deviations of <b>Y</b> around its expectation are additive and Gaussian: $$ Y = \beta_0 + \sum_{j=1}^p X_j \beta_j + \epsilon $$ 
+            </li>
+        </ul>
+
+        This assumptions are needed to make our final statement on the estimate of the true signal parameters:
+        $$ \hat{\beta} \sim N(\beta, (X^T X)^{-1} \sigma^2 ) $$
+
+        which is a very important statement, because it tells us that our model will be unbiased.
+        </p>
+        <p>
+        It is also worth noting that:
+
+        $$ (N-p-1) \hat{\sigma}^2 \sim \sigma^2 \chi_{N-p-1}^2 $$
+
+        which is a chi-squared distribution with <i>N-p-1</i> degrees of freedom. 
+        </p>
+        <p>
+            Intuitively, when <i>N-p</i> is high (the dataset is large with
+        respect to the number of features) the variance of our estimation of the &beta;s is small and our regressor is efficient, meaning that
+        its peformance on a test set will have a low mean squarred error.
+        On the contrary, having a small dataset with respect to the number of features will make our model inefficient (with high variance) 
+        when predicting the output of new unseen data.
+        </p>        
+    </p>
+
+    <br>
+
+    <h3>WORK IN PROGRESS</h3>
+    <br>
+    <br>
+
+    <h5>1.2 Gauss-Markov theorem</h5>
+
+    <h5>1.3 Least Squares in Convex Optimization</h5>
+
+    <h5>1.4 Least Squares Python Implementation</h5>
+
+    <h4>2. Ridge Regression</h4>
+
+    <h5>2.1 Ridge Regression Models in Statistical Learning</h5>
+
+    <h5>2.2 Ridge Regression in Convex Optimization</h5>
+
+    <h4>3. Lasso Regression</h4>
+
+    <h5>3.1 Lasso Regression Models in Statistical Learning</h5>
+
+    <h5>3.2 Lasso Regression in Convex Optimization</h5>
+</div>
+</body>
+</html>

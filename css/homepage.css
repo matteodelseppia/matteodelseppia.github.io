@@ -1,6 +1,6 @@
 .top-post {
-    margin-top: 100px;
     margin: 20px;
+    margin-top: 30px;
 }
 
 .post-title {
@@ -57,4 +57,8 @@
     font-family: "Raleway";
     font-size: 60px;
     color: white;
+ }
+
+ #information :hover {
+    cursor: pointer;
  }
