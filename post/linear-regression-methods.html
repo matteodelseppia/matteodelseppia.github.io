@@ -149,15 +149,82 @@
 
     <br>
 
-    <h3>WORK IN PROGRESS</h3>
-    <br>
-    <br>
-
     <h5>1.2 Gauss-Markov theorem</h5>
+    <p>
+        The theorem asserts that, under all the assumptions explicited above, the least squares estimator of the parameters of a linear regression model is the
+        best linear unbiased estimator (BLUE), which means it has the smallest variance among all other unbiased estimators.
+
+        To prove this, we can pick another linear, unbiased estimator:
+        $$ \bar{\beta} = Cy, \ \ y = \beta X + \epsilon $$
+
+        with <b>C</b> a row vector. Again, the estimator must be unbiased by construction:
+        $$ E(\bar{\beta}) = C E(y) = C X \beta = \beta \ \  < = > \ \ CX = I$$
+
+        Then:
+        $$ V(\bar{\beta}) = V(Cy)  $$
+        $$ = C V(y) C^T  $$
+        $$ = \sigma^2 C C^T $$
+        $$ \geq \sigma^2 C H C^T \ \ \ \text{(H is the projection matrix of the least squares estimate)}$$
+        $$ = \sigma^2 C X (X^T X)^{-1} X^T C^T $$
+        $$ = \sigma^2 (X^T X)^{-1} $$
+        $$ = V(\hat{\beta}) $$
+
+        The inequality holds thanks to the triangular inequality, as <b>H</b> is the orthogonal projection on the subspace spanned by <b>X</b>.
+        <br>
+        In fact, let <b>Q = I - H</b> be the projection onto the orthogonal complement of <b>X</b>. Then we have:
+        $$ C^T = H C^T + Q C^T \ , \ H C^T \perp Q C^T $$
+        $$ ||C||^2 = ||HC^T||^2 + ||QC^T||^2 $$
+        $$ ||C||^2 \geq ||HC^T||^2 = (HC^T)^T(HC^T) = (CH)(HC^T) = CHC^T $$ 
+        as any orthogonal projection matrix is idempotent (H^2 = H) and symmetric.<br>
+        <br>
+        While this is a strong result, note that there are <b>biased</b> methods like
+        ridge regression that can still have a smaller variance than least squares. 
+
+    </p>
 
     <h5>1.3 Least Squares in Convex Optimization</h5>
+    <p>
+        Given a dataset of pairs <b>(x<sup>i</sup>, y<sup>i</sup>)</b> with <b>x<sup>i</sup></b> in <b>R<sup>N</sup></b>, <b>y<sup>i</sup></b> in <b>R</b> and <i>i = 1 ... p</i>, we are searching
+        for a fitting hyperplane in the form:
+        $$ f(x) = w^T x + b \ \ , \ w \in \mathbb{R}^N, \ b \in \mathbb{R}$$
 
-    <h5>1.4 Least Squares Python Implementation</h5>
+        In particular, we want to find the hyperplane that minimizes the least squares cost function:
+        $$ g(w, b) = \sum_{j = 1}^p (w^T x^j + b - y^j)^2 $$
+
+        The problem can be expressed in a more convenient way
+        by defining $$ z = (b, w), \ \  X = \begin{bmatrix} 1 & x_1^1 & ... & x_N^1 \\ . & . & ... & . \\ 1 & x_1^p & ... & x_p^N \end{bmatrix} \ \ ,
+        $$
+        
+        $$
+            \begin{cases}
+            \min_{z} \frac{1}{2}||Xz - y||_2^2 \\
+            \\
+            z \in \mathbb{R}^{N+1}
+            \end{cases}
+
+            \equiv 
+
+            \begin{cases}
+            \min_{z} \frac{1}{2}z^T X^T X z - y^T X z + y^T y \\
+            \\
+            z \in \mathbb{R}^{N+1}
+            \end{cases}
+        $$
+
+        which is an unconstrained quadratic convex problem. Note that the problem has always at least one solution even if X is nonsingular
+        because <b>X <sup>T</sup>X</b> is positive semidefinite. All the solutions can be found by zeroing the gradient and solving
+        the system of linear equations:
+        $$ \nabla_z ( \frac{1}{2}z^T X^T X z - y^T X z + y^T y) = 0 \ \ , $$
+        $$ X^T X z - X^T y = 0 \ \ , $$
+        $$ X^T X z = X^T y $$
+
+        which is exactly the solution we found when we approached the problem via statistical learning. <br>
+
+        NB: the problem is similar to polynomial regression with euclidean norm, where X is the Vandermonde matrix.
+
+    </p>
+
+    <h3>WORK IN PROGRESS</h3>
 
     <h4>2. Ridge Regression</h4>
 
