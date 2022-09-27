@@ -400,13 +400,15 @@
 
     <h5>2.4 Principal Components Regression</h5>
     <p>
-        Principal component regression takes the principal components <b>z<sub>i</sub> = Xv<sub>i</sub></b> of the centered
+        Principal component regression takes the transformed input columns <b>z<sub>i</sub> = Xv<sub>i</sub></b> of the centered
         training data <b>X</b> and then regresses <b>y</b> on the principal components for <i>i = 1... M < p</i>.
         Since the principal components are orthogonal, the regression is just a sum of univariate regressions:
 
         $$ \hat{y}_{(M)}^{\text{pcr}} = \bar{y}\textbf{1} + \sum_{m=1}^M \hat{\theta}_m z_m $$
 
         $$ \hat{\beta}^{\text{pcr}}(M) = \sum_{m=1}^M \hat{\theta}_m v_m $$
+
+        $$ \hat{\theta}_m = \frac{z_m^T y}{||z_m||^2} $$
     </p>
 
     <p>
