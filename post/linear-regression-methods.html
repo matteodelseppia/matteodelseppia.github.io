@@ -28,7 +28,7 @@
     <header style="margin: auto; text-align: center; margin-top: 30px;"><h3>Notes on Linear Regression Methods</h3></header>
     <p class="post-description">
         Least squares, ridge regression and lasso regression formulations, approached via both statistics and convex optimization.
-        Partially based on Chapter 3 of <a href="https://hastie.su.domains/ElemStatLearn/"><i>Elements of Statistical Learning</i></a>.
+        Partly based on Chapter 3 of <a href="https://hastie.su.domains/ElemStatLearn/"><i>Elements of Statistical Learning</i></a>.
     </p>
 
     <h4>
@@ -180,7 +180,23 @@
         While this is a strong result, note that there are <b>biased</b> methods like
         ridge regression that can still have a smaller variance than least squares. 
 
-    </p>
+        </p>
+
+        <p>
+            In any case, least squares estimates in the real world might not
+            satisfying enough for two reasons:
+            <ul>
+                <li>least squares often have low bias but large variance; prediction accuracy can sometimes
+                    be improved by <i>shrinking</i> or setting some coefficients to zero (<i>subset selection</i>),
+                    sacrificing a bit of bias to reduce the variance of the predicted values;
+                 </li>
+
+                 <li>
+                    with a large number of variables, we would like to determine a smaller subset exhibiting
+                    the stronger effects on the response vector <b>y</b>
+                 </li>
+            </ul>
+        </p>
 
     <h5>1.3 Least Squares in Convex Optimization</h5>
     <p>
@@ -222,19 +238,185 @@
 
     </p>
 
-    <h3>WORK IN PROGRESS</h3>
+    <br><br>
 
-    <h4>2. Ridge Regression</h4>
+    <h4>2. Shrinkage methods</h4>
 
-    <h5>2.1 Ridge Regression Models in Statistical Learning</h5>
+    Subset selection produces a model that is interpretable and with possibly a lower prediction
+    error than the full least squares model. But subset selection is a <i>discrete</i> process: either
+    a feature is dropped or it is retained, and this often leads to high variance again. <br>
+    On the other hand, shrinkage methods are more continuous, as they <i>shrink</i> or <i>increase</i> the importance of features without dropping
+    them if not necessary. They are popular because they don't suffer as much of high variability. 
 
-    <h5>2.2 Ridge Regression in Convex Optimization</h5>
+    <h5>2.1 Ridge Regression Model</h5>
+    <p>
+        Ridge regression shrinks the coefficients by adding a penalty to their squared size in the residual sum of squares cost function:
+        $$ RSS^{\text{ridge}}(\beta) = \sum_{i=1}^N \big( y_i - \beta_0 - \sum_{j=1}^p x_{ij}\beta_j \big)^2 + \lambda \sum_{j=1}^p \beta_j^2 $$
 
-    <h4>3. Lasso Regression</h4>
+        where <b>&lambda;</b> &geq; 0 is a given parameter controlling the amount of shrinking. When the shrinking parameter is zero, we have the standard
+        least squares method, while when &lambda; &RightArrow; &infin; we have a flat hyperplane because all the &beta;s are zero but &beta;<sub>0</sub>.
+    </p>
 
-    <h5>3.1 Lasso Regression Models in Statistical Learning</h5>
+    <p>Moreover, it can be proven that minimizing the unconstrained residual sum of squares given &lambda; > 0 is equivalent to solving the constrained
+        optimization problem:
+        $$ \begin{cases}
+                \min_\beta \sum_{i=1}^N \big( y_i - \beta_0 - \sum_{j=1}^p x_{ij}\beta_j \big)^2 \\
+                \\
+                \sum_{j=1}^p \beta_j^2 \leq t
+            \end{cases}
+        $$
 
-    <h5>3.2 Lasso Regression in Convex Optimization</h5>
+        where <i><b>t</b></i> has a one-to-one correspondence with the given &lambda; :
+        $$ t = y^T X (X^T X - \lambda I)^{-2} X^T y $$
+
+        Notice that the intercept has been left out of the penalty. The penalization
+        of the intercept would make the procedure depend on the origin chosen for 
+        <b>Y</b>. Instead, we estimate the intercept as the mean of the given response
+        vector. The remaining coefficients are estimated by a ridge regression without
+        intercept, using the training data <b>X</b> after standardization and removing
+        the column relative to the intercept.
+    </p>
+
+    <p>
+        Writing the criterion in matrix form, we have:
+        $$ RSS(\lambda) = (y - X \beta)^T (y - X \beta) + \lambda \beta^T \beta $$
+        $$ \hat{\beta}^{\text{ridge}} = (X^T X + \lambda I )^{-1} X^T y $$
+
+        In this case the solution adds a positive constant &lambda; to the diagonal of
+        <b>X<sup>T</sup>X</b> before inversion. This makes the problem <b>always nonsingular</b>.
+    </p>
+
+    <p>An interesting interpretation of the ridge regression method can be achieved
+        looking at the <i>singular value decomposition</i> of the centered input matrix
+        <b>X</b>. The SVD of the <i>N x p</i> matrix <b>X</b> is:
+        $$ X = UDV^T, \ \ U \in \mathbb{R}^{N \times p}, V \in \mathbb{R}^{p \times p} $$
+        such that:
+        <ul>
+            <li>
+                the columns of <b>U</b> span the column space of <b>X</b>
+            </li>
+            <li>
+                the columns of <b>V</b> span the row space of <b>X</b>
+            </li>
+            <li>
+                <b>D</b> is <i>p x p</i> diagonal matrix, with diagonal entries
+                <i>d<sub>1</sub> &geq; ... &geq; d<sub>p</sub></i> known as <b>singular
+                    values
+                </b> of <b>X</b>. If one or more values <i>d<sub>j</sub></i> = 0, <b>X</b>
+                is singular
+            </li>
+        </ul>
+
+        Let's apply the singular value decomposition to the ridge regression solutions:
+        $$ X \hat{\beta}^{\text{ridge}} = X(X^T X + \lambda I)^{-1} X^T y$$
+        $$ = U D(D^2 + \lambda I)^{-1} D U^T y $$
+        $$ = \sum_{j = 1}^p \frac{d_j^2}{d_j^2 + \lambda} u_j^T y $$
+
+        where <i>u<sub>j</sub></i> are the columns of <b>U</b>. Also notice that:
+        $$ \frac{d_j^2}{d_j^2 + \lambda} \leq 1 \ \ \ \forall j=1...p $$
+        because the shrinking factor is non-negative. 
+    </p>
+
+    <p>
+        It is now clear that ridge regression computes the coordinates of <b>y</b> with
+        respect to the orthonormal basis <b>U</b> and then shrinks the coordinates by the
+        factors <i>d<sub>j</sub> <sup>2</sup> / ( d<sub>j</sub> <sup>2</sup> + &lambda; )</i>, which
+        means that a greater amount of shrinkage is applied to the coordinates of basis vectors
+        with smaller <i>d<sub>j</sub> <sup>2</sup></i>.<br>
+        
+        The SVD of the centered matrix <b>X</b> is just another way of expressing
+        the principal components of the variables in <b>X</b>. In fact, the sample
+        covariance matrix is given by <b>X <sup>T</sup> X</b> <i>/N</i>, and with the 
+        decomposition we get:
+        $$ X^T X = V D^2 V^T $$
+
+        which is the eigen decomposition of the covariance matrix up to a factor <i>N</i>.
+        The columns of <b>V</b> are the eigenvectors of <b>X</b> and are also known as
+        the <i>principal components directions</i> of <b>X</b>.
+        The first principal component direction <i>v <sub>1</sub></i> has the property that
+        <b>X</b><i>v<sub>1</sub></i> has the largest sample variance amongst all normalized
+        linear combinations of the columns of <b>X</b>:
+        $$ Var(X v_1) = \frac{d_1^2}{N} $$
+        $$ \text{and} $$
+        $$ z_1 = Xv_1 = u_1 d_1 $$
+
+        where <i>z<sub>1</sub></i> is the first <i>princiapl component</i> of <b>X</b> and
+        <i>u<sub>1</sub></i> is the first <i>normalized principal component</i> of <b>X</b>.
+    </p>
+
+    <p>
+        The last principal components have minimum variance, and ridge regression shrinks
+        these directions coefficients the most.
+        The implicit assumption of ridge regression is that the response will tend to vary most in the
+        directions of high variance of the inputs, which is often a reasonable assumption.
+    </p>
+
+    <p>Lastly, we define the following monotone decreasing function of &lambda; the 
+        <i>effective degrees of freedom</i> of the ridge regression fit:
+        $$ df(\lambda) = \sum_{j=1}^p \frac{d_j^2}{d_j^2 + \lambda} $$
+    </p>
+
+    <h5>2.2 Lasso Regression Model</h5>
+    <p>
+        Lasso is a shrinkage method like ridge, but the residual sum of squares
+        here is defined as:
+
+        $$ RSS^{\text{lasso}}(\beta) = \sum_{i=1}^N \big( y_i - \beta_0 - \sum_{j=1}^p x_{ij}\beta_j \big)^2 + \lambda \sum_{j=1}^p | \beta_j | $$
+
+        and the equivalent minimization problem is:
+
+        $$ \begin{cases}
+        \min_\beta \frac{1}{2}\sum_{i=1}^N \big( y_i - \beta_0 - \sum_{j=1}^p x_{ij}\beta_j \big)^2 \\
+        \\
+        \sum_{j=1}^p | \beta_j | \leq t
+        \end{cases}
+        $$
+
+        Just like in ridge regression, we can re-parametrize the intercept by standardizing the
+        predictors and the solution for the intercept is the mean of the response vector.
+        Computing the lasso regression is a quadratic programming problem with the same
+        computational cost of ridge ression.
+    </p>
+    <p>
+        In this case the constraint is non-smooth and setting &lambda; sufficiently high
+        will have the effect of putting some coefficients to exactly zero.
+
+        Moreover, both ridge and lasso regression find the first point where the
+        level sets of the residual sum of squares hit the constraint region.
+        
+        In lasso regression the constraint region is a rhomboid and when <i>p > 2</i>
+        it has many corners, flat edges and faces; there are many possibilities that
+        for one of the estimated parameters to be set to zero.
+
+    <h5>2.3 Elatic Net Regression</h5>
+    <p>
+        Elastic net regression takes the best of the two methods. In fact, its penalty
+        term is designed to relax the rhomboid's constraints, making its faces smooth similarly to the ones of ridge regression,
+        while maintaining the corners sharp (non-differentiable)
+        to be still able to put some coefficients to zero:
+
+        $$ RSS^{\text{elastic}} = \sum_{i=1}^N \big( y_i - \beta_0 - \sum_{j=1}^p x_{ij}\beta_j \big)^2 + \lambda \sum_{j=1}^p (\alpha\beta_j^2 + (1-\alpha)|\beta_j|) \ , \ \alpha \in [0, 1] $$
+    </p>
+
+    <h5>2.4 Principal Components Regression</h5>
+    <p>
+        Principal component regression takes the principal components <b>z<sub>i</sub> = Xv<sub>i</sub></b> of the centered
+        training data <b>X</b> and then regresses <b>y</b> on the principal components for <i>i = 1... M < p</i>.
+        Since the principal components are orthogonal, the regression is just a sum of univariate regressions:
+
+        $$ \hat{y}_{(M)}^{\text{pcr}} = \bar{y}\textbf{1} + \sum_{m=1}^M \hat{\theta}_m z_m $$
+
+        $$ \hat{\beta}^{\text{pcr}}(M) = \sum_{m=1}^M \hat{\theta}_m v_m $$
+    </p>
+
+    <p>
+        Principal components regression is similar to ridge regression as both
+        operate via the principal components of the input matrix. Ridge shrinks 
+        a certain coefficient more depending on the size of the corresponding eigenvalue,
+        while <b>PCR discards the <i>p-M</i> smallest eigenvalue components.</b>
+    </p>
+    <br>
+    <br>
 </div>
 </body>
 </html>
