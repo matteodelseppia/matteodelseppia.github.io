@@ -75,19 +75,19 @@
     <p>
         Logistic Regression models are usually fit by <b>maximum likelihood</b>, using the conditional likelihood of <i>X</i> being part of class A. In particular, it is better to take in consideration the log-likelihood given <i>N</i> observations:
     </p>
-    $$ l(\beta) = \sum_{i=1}^N \big[ y_i \log p(x_i; \beta) + (1-y_i)\log (1-p(x_i; \beta)) \big] $$
+    $$ l(\beta) = \sum_{i=1}^N \big[ y_i \log p(x^i; \beta) + (1-y_i)\log (1-p(x^i; \beta)) \big] $$
     <p>assuming the vector of parameters &beta;  includes the intercept and the instance <i>x<sub>i</sub></i> includes the constant term 1 to accomodate the intercept. To maximize the log-likelihood we set the gradient to zero: </p>
-    $$ \frac{\partial l(\beta)}{\partial \beta} = \nabla l(\beta) =  \sum_{i=1}^N x_i(y_i - p(x_i; \beta)) = X^T (y - p) = 0$$
-    <p> which is a system of <i>p+1</i> non-linear equations in &beta; where <b>X</b> is the <i>N x (p+1)</i> matrix of training instances, <b>p</b> is the vector of fitted probabilities for each instance and <b>W</b> is an <i>N x N</i> diagonal matrix of weights with <i>i-th</i> diagonal element equal to <i>p(x<sub>i</sub> ; &beta;) (1 - p(x<sub>i</sub> ; &beta;)</i>. 
-    We can use the Newton method with the origin as starting point to null the gradient:
+    $$ \frac{\partial l(\beta)}{\partial \beta} = \nabla l(\beta) =  \sum_{i=1}^N x^i(y_i - p(x^i; \beta)) = X^T (y - p) = 0$$
+    <p> which is a system of <i>p+1</i> non-linear equations in &beta; where <b>X</b> is the <i>N x (p+1)</i> matrix of training instances and <b>p</b> is the vector of fitted probabilities for each instance. If we define <b>W</b> as a <i>N x N</i> diagonal matrix of weights with <i>i-th</i> diagonal element equal to <i>p(x<sub>i</sub> ; &beta;) (1 - p(x<sub>i</sub> ; &beta;)</i>,
+    we can use the Newton method with the origin as starting point to null the gradient:
     </p>
-            $$ \frac{\partial^2l(\beta)}{\partial\beta\partial\beta^T} = \nabla ^2 l(\beta) = - \sum_{i=1}^N x_i x_i^T p(x_i; \beta) (1 - p(x_i; \beta) = -X^T W X $$
+            $$ \frac{\partial^2l(\beta)}{\partial\beta\partial\beta^T} = \nabla ^2 l(\beta) = - \sum_{i=1}^N x^i (x^i)^T p(x^i; \beta) (1 - p(x^i; \beta) = -X^T W X $$
         $$ \text{at each step j: } \beta^{j+1} = \beta^j - [\nabla ^2 l(\beta^j)]^{-1} \nabla l(\beta^j)$$
         $$ = \beta^{j} - (X^T W X)^{-1} X^T (y -p)$$
             $$ = (X^T W X)^{-1} X^TW (X \beta^j + W^{-1}(y-p))$$
                 $$ = (X^T W X)^{-1} X^T W z, \ \ z= X \beta^j + W^{-1} (y-p) = \text{adjusted response}$$
     
-    <p>The last two steps allow to re-express the Newton step as a <b>weighted least squares step with response vector <i>z</i></b>. At each iteration we are solving the weighted least squares problem:</p>
+    <p>The last two steps allow to re-express each step of the Newton method as a <b>weighted least squares step with response vector <i>z</i></b>. At each iteration we are solving the weighted least squares problem:</p>
     
     $$ \beta^{j+1} = \arg \min_\beta (z - X \beta)^TW(z-X\beta) $$
     <p>and because of this it is often referred to as <i>iteratively reweighted least squares</i> (IRLS).
