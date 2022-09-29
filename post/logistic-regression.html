@@ -94,7 +94,7 @@
     Since log-likelihood is concave, we are maximizing a concave function, hence the problem is convex and should converge. In real applications, IRLS typically converges but sometimes it doesn't. The Newton method assumes a constant step size equal to one and this can lead to overshooting. In such cases when the log-likelihood decreases instead of increasing, halving the step size will guarantee convergence.</p>
     <p> The connection with least squares provides some useful properties to logistic regression models:
     <ul>
-    <li>assuming the model is correct, then our estimate of the paramters converges to the true parameters of the model</li>
+    <li>assuming the model is correct, then our estimate of the parameters converges to the true parameters of the model</li>
     <li>the distribution of our estimates of the true parameters of the model converges to the following normal distribution:</li>
     </ul>
     $$ \hat{\beta} \sim N(\beta, (X^T W X)^{-1})$$
