@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="utf-8">
+  <title>Notes on Linear Regression Methods</title>
+  <meta name="description" content="notes on linear regression methods">
+  <meta name="author" content="Matteo Del Seppia">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+  </script>
+
+  <link href="https://fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+
+  <link rel="stylesheet" href="../css/normalize.css">
+  <link rel="stylesheet" href="../css/skeleton.css">
+  <link rel="stylesheet" href="../css/post.css">
+
+  <link rel="icon" type="image/png" href="../images/notes.png">
+
+</head>
+<body>
+
+  <div class="container">
+    <header style="margin: auto; text-align: center; margin-top: 30px;"><h3>Notes on Logistic Regression</h3></header>
+    <p class="post-description">
+        Notes on Logistic Regression models based on parts of Chapter 4 of <a href="https://hastie.su.domains/ElemStatLearn/"><i>Elements of Statistical Learning</i></a>.
+    </p>
+
+    <h4> 1. Model and assumptions</h4>
+    <p> Logistic regresison models are often used as an inference tool, when the main goal is to understand the role of the input variables in <b>explaining the outcome</b>.
+    </p>
+    <p>
+        Consider two sets of <i>p</i>-dimensional training points belonging to two different classes <i>A, B</i> with training labels <i>y</i> such that:
+    </p>
+    $$ y_i = \begin{cases} 1 & x^i \in A \\ 0 & x^i \in B\end{cases} $$
+    <p>
+        Our goal is to model the relationship between the probability for an instance to belong to class <i>A</i> given the values of its features.
+        In other words, we are searching for a function approximating the conditioned probability:
+    </p>
+    $$ \Pr(Y=1|X=x)$$
+    <p>In logistic regression we assume that the conditioned probability above has the form of a sigmoid function:</p>
+    $$ \sigma(z) = \frac{e^z}{1+e^z}$$
+    
+    <p>
+    
+    Not only that, we also make the assumption that the contribution of each feature to the conditioned probability is linear in the log-odds of the logistic regression function. This means that we are searching the parameters of a linear regression model &beta; such that:
+    
+    </p>
+    $$ p(X) = \Pr(Y=1 | X) = \frac{e^{\beta_0 + \beta_1X_1 + ... + \beta_pX_p}}{1+ e^{\beta_0 + \beta_1X_1 + ... + \beta_pX_p}}$$
+    <p>
+        is as close as possible to 1 if <i>x</i> belongs to <i>A</i> and as close as possible to zero if <i>x</i> belongs to <i>B</i>.
+        Notice that:
+    </p>
+    $$ \frac{p(X)}{(1-p(X))} = e^{\beta_0 + \beta_1X_1 + ... + \beta_p X_p}$$
+    
+    <p> 
+        is exactly the definition of <b>odds function</b>. A large value of the odds function means that there is a high probability for a certain point to belong to class A. 
+    </p>
+    
+    <p>
+    In fact, applying the natural logarithm to both sides of the equation:
+    
+    </p>
+    $$ \log \big(p(X) / (1-p(X)) = \beta_0 + \beta_1X_1 + ...+\beta_p X_p$$
+    <p>
+    This shows that in logisitic regression models the log-odds function (or <i>logit</i> ) is assumed to be <b>linear with respect to <i>X</i></b>, which means that increasing the independent variable <i>X<sub>i</sub></i> by one has the effect of increasing the logit function of a factor <i>&beta;<sub>i</sub></i>. 
+    </p>
+    <br>
+    <br>
+    <h4> 2. Fitting the model</h5>
+    <p>
+        Logistic Regression models are usually fit by <b>maximum likelihood</b>, using the conditional likelihood of <i>X</i> being part of class A. In particular, it is better to take in consideration the log-likelihood given <i>N</i> observations:
+    </p>
+    $$ l(\beta) = \sum_{i=1}^N \big[ y_i \log p(x_i; \beta) + (1-y_i)\log (1-p(x_i; \beta)) \big] $$
+    <p>assuming the vector of parameters &beta;  includes the intercept and the instance <i>x<sub>i</sub></i> includes the constant term 1 to accomodate the intercept. To maximize the log-likelihood we set the gradient to zero: </p>
+    $$ \frac{\partial l(\beta)}{\partial \beta} = \nabla l(\beta) =  \sum_{i=1}^N x_i(y_i - p(x_i; \beta)) = X^T (y - p) = 0$$
+    <p> which is a system of <i>p+1</i> non-linear equations in &beta; where <b>X</b> is the <i>N x (p+1)</i> matrix of training instances, <b>p</b> is the vector of fitted probabilities for each instance and <b>W</b> is an <i>N x N</i> diagonal matrix of weights with <i>i-th</i> diagonal element equal to <i>p(x<sub>i</sub> ; &beta;) (1 - p(x<sub>i</sub> ; &beta;)</i>. 
+    We can use the Newton method with the origin as starting point to null the gradient:
+    </p>
+            $$ \frac{\partial^2l(\beta)}{\partial\beta\partial\beta^T} = \nabla ^2 l(\beta) = - \sum_{i=1}^N x_i x_i^T p(x_i; \beta) (1 - p(x_i; \beta) = -X^T W X $$
+        $$ \text{at each step j: } \beta^{j+1} = \beta^j - [\nabla ^2 l(\beta^j)]^{-1} \nabla l(\beta^j)$$
+        $$ = \beta^{j} - (X^T W X)^{-1} X^T (y -p)$$
+            $$ = (X^T W X)^{-1} X^TW (X \beta^j + W^{-1}(y-p))$$
+                $$ = (X^T W X)^{-1} X^T W z, \ \ z= X \beta^j + W^{-1} (y-p) = \text{adjusted response}$$
+    
+    <p>The last two steps allow to re-express the Newton step as a <b>weighted least squares step with response vector <i>z</i></b>. At each iteration we are solving the weighted least squares problem:</p>
+    
+    $$ \beta^{j+1} = \arg \min_\beta (z - X \beta)^TW(z-X\beta) $$
+    <p>and because of this it is often referred to as <i>iteratively reweighted least squares</i> (IRLS).
+    Since log-likelihood is concave, we are maximizing a concave function, hence the problem is convex and should converge. In real applications, IRLS typically converges but sometimes it doesn't. The Newton method assumes a constant step size equal to one and this can lead to overshooting. In such cases when the log-likelihood decreases instead of increasing, halving the step size will guarantee convergence.</p>
+    <p> The connection with least squares provides some useful properties to logistic regression models:
+    <ul>
+    <li>assuming the model is correct, then our estimate of the paramters converges to the true parameters of the model</li>
+    <li>the distribution of our estimates of the true parameters of the model converges to the following normal distribution:</li>
+    </ul>
+    $$ \hat{\beta} \sim N(\beta, (X^T W X)^{-1})$$
+    
+    <ul>
+    <li> the weighted residual sum of squares, a quadratic approximation of the deviance, is the familiar chi-square statistic: </li>
+    </ul>
+    $$ \sum_{i=1}^N \frac{(y_i - \hat{p}_i)^2}{\hat{p_i}(1-\hat{p_i})}$$
+    </p>
+    <br><br>
+
+    <h4>3. L1-Regularized Logistic Regression</h4>
+    <p>The L1 penalty used in Lasso regression can be used for variable selection and shrinkage with any linear regression model, including the log-odds function. In case of logistic regression, maximizing the log likelihood with L1 regularization corresponds to solving to the unconstrained problem:
+    
+    $$ \max_{\beta} \bigg[ \sum_{i=1}^N \big(y_i\beta^T x^i - \log(1 + e^{\beta^Tx^i}) \big) \ \ \ - \lambda \sum_{j=1}^p | \beta_j| \bigg]$$
+    
+    Notice that we are not penalizing the intercept term, as it happens in Lasso regression. If we use the same Newton method used above to solve the problem, this time we will solve <b>at each step a weighted lasso regression problem</b>.
+    </p>
+    <br>
+    <br>
+
+</div>
+</body>
+</html>
