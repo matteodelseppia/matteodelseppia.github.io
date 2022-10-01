@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="utf-8">
+  <title>Notes on Linear Regression Methods</title>
+  <meta name="description" content="notes on discriminant analysis methods">
+  <meta name="author" content="Matteo Del Seppia">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+  </script>
+
+  <link href="https://fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+
+  <link rel="stylesheet" href="../css/normalize.css">
+  <link rel="stylesheet" href="../css/skeleton.css">
+  <link rel="stylesheet" href="../css/post.css">
+
+  <link rel="icon" type="image/png" href="../images/notes.png">
+
+</head>
+<body>
+
+  <div class="container">
+    <header style="margin: auto; text-align: center; margin-top: 30px;"><h3>Notes on Discriminant Analysis Methods</h3></header>
+    <p class="post-description">
+        Brief notes about LDA and QDA based on Chapter 4 of <a href="https://hastie.su.domains/ElemStatLearn/"><i>Elements of Statistical Learning</i></a>.
+    </p>
+
+
+    <h4> 1. Linear Discriminant Analysis </h4>
+    <p>We have a training set of p-dimensional training points, each one belonging to a certain class <i>C<sub>i</sub></i> with <i>i = 1...K</i>.
+    Suppose we know the class-conditional density of a random point <i>X</i> in class <i>C<sub>k</sub></i> and that &pi;<sub>k</sub> is the prior probability of class <i>k</i> (the sum of all the prior probabilities of the classes must be one).
+    Then we can write the posterior probability thanks to the Bayes theorem:
+    </p>
+    $$ \Pr(C_k | X =x) = \frac{f_k(x)\pi_k}{\sum_{i =1}^K f_i(x)\pi_i}$$
+    
+    <p>
+    We see that if we knew the class conditional probability density function for each class, we could calculate the probability for a certain instance of being part of a certain class.<br>
+    In linear discriminant analysis we make two assumptions:
+    <ul>
+    <li>the densities are Gaussian</li>
+    <li>all classes have the same variance-covariance matrix</li>
+    </ul>
+    </p>
+    <p>
+    This means we can express each density as:
+    $$ f_k(x) = \frac{1}{(2\pi)^{p/2}\det(\Sigma)^{1/2}}e^{-\frac{1}{2}(x-\mu_k)^T\Sigma^{-1}(x-\mu_k)}$$
+    The decision boundary between two classes <i>C<sub>i</sub> , C<sub>j</sub></i> is made by the points where the two posterior probabilities are equal:
+    $$ \text{decision boundary between $C_i, C_j$ :} \ \ \  \Pr(C_i | X =x)  = \Pr(C_j | X =x) $$
+    $$ \implies \log\Pr(C_i | X =x) = \log\Pr(C_j | X =x) $$
+    $$ \log \frac{\Pr(C_i | X =x)}{\Pr(C_j | X =x)} = 0$$
+    $$ \text{where:} \ \ \ \  \log \frac{\Pr(C_i | X =x)}{\Pr(C_j | X =x)} = \log\frac{f_i(x)}{f_j(x)} + \log(\pi_i / \pi_j)$$
+    $$ = \log(\pi_i/\pi_j) - \frac{1}{2}(\mu_i + \mu_j)^T\Sigma^{-1}(\mu_i-\mu_j) + x^T \Sigma^{-1}(\mu_i -\mu_j)$$
+    meaning that the decision boundary equation is linear in <i>x</i>. This is true for every pair of classes, hence we can draw the decision boundaries for each pair, which are hyperplanes in <i>p</i> dimensions.
+    </p>
+    <p>
+    In real-world problems we often don't have the real parameters of the Gaussian distributions for each class, thus we need to estimate them:
+    $$ \hat{\pi}_k = N_k /N $$
+    $$ \hat{\mu}_k = \sum_{x_i \in C_k} x_i /N_k $$
+    $$ \hat{\Sigma} = \sum_{k=1}^K \sum_{x_i \in C_k} (x_i - \hat{\mu}_k)(x_i - \hat{\mu}_k)^T / (N-K)$$
+    </p>
+    <br>
+    <br>
+
+    <h4>2. LDA vs Logistic Regression </h4>
+    <p>
+    It would seem that LDA and Logistic Regression are the same models, as they both assume (in different ways) that their logit functions are linear in <i>x</i>:
+    
+    <div class="row">
+        <div class="six columns">
+            <b>Logistic Regression:</b>
+            $$ \log \frac{\Pr(C_k | X =x)}{\Pr(C_K | X =x)} = $$
+            $$ = \log(\pi_k/\pi_K) - \frac{1}{2}(\mu_k $$
+            $$ + \mu_K)^T\Sigma^{-1}(\mu_k-\mu_K) + x^T \Sigma^{-1}(\mu_k -\mu_K) $$
+            $$ = \alpha_{k0} +\alpha_k^T x  $$
+        </div>
+
+        <div class="six columns">
+            <b>LDA:</b>
+            $$ \log \frac{\Pr(C_k | X =x)}{\Pr(C_K | X =x)} = $$
+            $$ = \beta_{k0} + \beta_k^T x$$
+        </div>
+    </div>
+
+    </p>
+    <p>
+    One first observation we can make is that logistic regression is more general, because it makes less assumptions. 
+    
+    To understand what's really happening under the hood let's look at the joint density of <i>X, C<sub>k</sub></i> :
+    $$ \Pr(X,C_k) = \Pr(X)\Pr(C_k|X) $$
+    where <i>Pr(X)</i> is the marginal density of <i>X</i>. For both methods the term on the right is logit-linear, and for logistic legression we can write:
+    $$ \Pr(C_k|X=x) = \frac{e^{\beta_{k0}+\beta_k^Tx}}{1+\sum_{j=1 \ , \  j \neq k}^{K} e^{\beta_{j0}+\beta_j^Tx}}$$
+    Logistic regression leaves the marginal density of the input as an arbitrary, unspecified, possibly nonparametric density function and fits the parameters &beta; <b>by maximizing <i>only</i> the conditional likelihood</b>.
+    With LDA we fit the parameters <b>by maximizing the <i>full</i> log-likelihood</b>, based on the joint density:
+    $$ \Pr(X, C_k) = f_k(x) =  \phi(X; \mu_k, \Sigma)$$
+    where &phi; is the Gaussian density function. As a consequence of the assumptions we make in LDA, in this case we are not leaving unspecified the marginal density:
+    $$ \Pr(X) = \sum_{j=1}^K \pi_k  \phi(X; \mu_j, \Sigma)$$
+    thus involving our estimates for parameters of each of our class distributions.
+    If the true distributions are Gaussians as we assume, then in the worst case ignoring the marginal part of the likelihood constitutes a loss efficiency of about 30% asymptotically in the error rate. 
+    For example, observations far from the decision boundary are down-weighted by logistic regression, while they play a significant role in estimating the common covariance matrix in LDA. On the other hand, this is not always a good for classification because it means that LDA is less robust to large outliers.
+    </p>
+    <br>
+    <br>
+    <h4>3. Quadratic Discriminant Analysis </h4>
+    <p>
+    What if we don't make the assumption that the variance-covariance matrices are equal for all classes? In that case it is convenient to define the <b>quadratic discriminant functions</b>:
+    
+    $$ d_k(x) = -\frac{1}{2}\log \det(\Sigma_k) - \frac{1}{2}(x + \mu_k)^T\Sigma_k^{-1}(x-\mu_k) + \log \pi_k $$
+    and to express the decision boundaries as:
+    $$ \{x \in \mathbb{R}^p: \delta_i (x) = \delta_j(x) \}$$
+    Notice that in this case the estimates to build the class-conditional density functions are quite the same, except for the variance-covariance matrix that has to be calculated for each class.
+    
+    </p>
+    <br>
+    <br>
+    <br>
+  </div>
+</body>
+</html>
