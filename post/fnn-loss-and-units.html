@@ -1,151 +1,322 @@
-<!DOCTYPE html>
 <html lang="en">
+
 <head>
 
-  <meta charset="utf-8">
-  <title>Notes on FNN Loss Functions and Output Neurons</title>
-  <meta name="description" content="notes on loss functions and output units for FNN">
-  <meta name="author" content="Matteo Del Seppia">
+  
 
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-  <script type="text/javascript" id="MathJax-script" async
-    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
-  </script>
+<meta charset="utf-8">
 
-  <link href="https://fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+<title>Notes on FNN Loss Functions and Output/Hidden Units</title>
 
-  <link rel="stylesheet" href="../css/normalize.css">
-  <link rel="stylesheet" href="../css/skeleton.css">
-  <link rel="stylesheet" href="../css/post.css">
+<meta name="description" content="notes on loss functions and output hidden units for FNN">
 
-  <link rel="icon" type="image/png" href="../images/notes.png">
+<meta name="author" content="Matteo Del Seppia">
+
+  
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+
+<script type="text/javascript" id="MathJax-script" async
+
+src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+
+</script>
+
+  
+
+<link href="https://fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+
+  
+
+<link rel="stylesheet" href="../css/normalize.css">
+
+<link rel="stylesheet" href="../css/skeleton.css">
+
+<link rel="stylesheet" href="../css/post.css">
+
+  
+
+<link rel="icon" type="image/png" href="../images/notes.png">
+
+  
 
 </head>
+
 <body>
 
-  <div class="container">
-    <header style="margin: auto; text-align: center; margin-top: 30px;"><h3>Notes on FNN Loss Functions and Output Neurons</h3></header>
-    <p class="post-description">
-        Brief notes about the most popular loss functions and output units used in feedforward neural networks, partly based on Chapter 6 of Goodfellow, Bengio, Yoshua <a href="https://www.deeplearningbook.org/"><i>Deep Learning</i></a> book.
-    </p>
+  
 
-    <h4>1. General Notions on Feedforward Networks</h4>
-    <p>The goal of a feedforward network is to approximate some function. For example, classifiers are trained to approximate some function mapping an input to its category. In more general terms, a feedforward network defines a mapping
-    </p>
-    $$ y = f(x; \theta)$$
-    <p>and learns the value of the parameters &theta; resulting in the best approximation of the <i>true signal</i> </p>
-    $$ f^*(x)$$
-    <p>which we only possess in the form of the (noisy) instances forming the training data.</p>
-    <p>The function we have to approximate isn't always linear. In fact, linear models such as linear regression and logistic regression are appealing because they are fitted efficiently and reliably, either through an analytical solution or with convex optimization, but in complex real-world problems we often have to approximate functions that are non-linear with the inputs. To extend linear models to represent nonlinear functions we can use a map &phi; that projects our inputs into a higher dimensional space called <i>features' space</i>, where it's possible to use linear models for classification or regression. But how should we choose &phi; ?</p>
-    <p>
-    <ul>
-    <li>one option is to leave the map undefined, exploiting the <i>kernel trick</i>; with this approach the <b>generalization to the test set often remains poor</b>;</li>
-    <li>&phi; can be <b>manually engineered</b>; this is what happened in the specialized fields of speech recognition or computer vision; </li>
-    <li>the strategy of deep learning is to <b>learn &phi; through a hidden layer</b> such that our network builds an approximation function in the form:</li>
-    </ul>
-    </p>
-    $$ y = f(x; \theta, w) = \phi(x; \theta)^Tw $$
-    <p>The largest difference between the linear models of statistical learning and neural networks is that the nonlinearity of a neural network causes the most famous loss functions to become non-convex. This means that there is no guarantee that the global optimum is unique and, even worse, gradient descent techniques may encounter many local optimums where the gradient is zero. </p>
-    <p>
-    What's more, deep learning models often have thousands of parameters that make the standard gradient descent algorithm too slow. That's why neural networks are usually fitted through stochastic gradient descent, which on the other hand is sensitive to the value of the initial parameters. In general the advice is to start with the parameters initialized to some small random values.
-    </p>
-    <br>
-    <br>
-    <h4> 2. Cost functions </h4>
-    <h5>2.1 Learning Conditional Distributions with Maximum Likelihood</h5>
-    
-    <p>Suppose we have a set of <i>m</i> training instances </p>
-    $$ \mathbb{X} = \{ x^1, ..., x^m\}$$
-    <p>drawn independently from the <b>true but unknown</b> distribution <b><i>p<sub>data</sub>(x)</i></b>.<br>
-    Let <b><i>p<sub>model</sub>(x; &theta;)</i></b>  be a parametric family of probability distributions over the same space indexed by &theta; . <b><i>p<sub>model</sub>(x; &theta;)</i></b> maps any configuration <i>x</i> to a real number estimating the true probability distribution of the training examples.
-    The maximum likelihood estimator for &theta; is then defined as:</p>
-    $$ \theta_{ML} = \arg \max_\theta p_{model}(\mathbb{X}; \theta)  = \arg \max_\theta \prod_{i=1}^m p_{model}(x^i; \theta)  \ \ (\text{for i.i.d.)} $$
-    <p>This product is often inconvenient because subject to numerical underflow. Alternatively we can calculate:</p>
-    $$ \theta_{ML} = \arg \max_\theta \sum_{i=1}^m \log p_{model} (x^i; \theta) = $$
-    $$ = \arg \max_\theta \frac{1}{m}\sum_{i=1}^m \log p_{model} (x^i; \theta)$$
-    $$ = \arg \max_\theta \mathbb{E}_{x \sim \hat{p}_{data}}\log p_{model}(x; \theta) $$
-    <p>which can be interpreted as minimizing the dissimilarity between the empirical distribution of training points we actually have and the model distribution parametrized by &theta; . <b>Minimizing this dissimilarity corresponds to minimizing the cross-entropy of the two distributions</b>. Notice that any loss function consisting of a negative log likelihood has the effect of minimizing the cross-entropy between the empirical distribution defined by the training set and the probability distribution defined by the model. For example, the mean squared error is the cross-entropy between the empirical distribution and a Gaussian model.</p>
-    
-    <p>These general considerations are particularly useful because our neural networks often want to build a parametric model defining a distribution:</p>
-    $$ P(Y=y|X=x; \theta)$$
-    <p>to choose the output using the principle of maximum likelihood. This means <b>we can use the cross entropy between the training data and the model's predictions as the cost function</b>:</p>
-    $$ J(\theta) = -\mathbb{E}_{x,y \sim \hat{p}_{data}} \log p_{model} (Y = y; X = x; \theta) $$
-    $$ = -\frac{1}{m}\sum_{j=1}^m \log p_{model}(Y=y^j ; X=x^j; \theta) $$
-    <p>with the specific form of the cost function changing from model to model. For example if:</p>
-    $$ p_{model} (Y = y|X=x ; \theta) = \mathcal{N}(y; f(x; \theta), I) $$
-    <p>it is easy to see that under the hood we are minimizing the <b>mean squared error cost</b>:</p>
-    $$ J(\theta) = \mathbb{E}_{x,y \sim \hat{p}_{data}} || y - f(x;\theta)||^2 $$
-    $$ = -\frac{1}{m}\sum_{j=1}^m ||y^j -f(x^j; \theta)||^2$$
-    <p>The maximum likelihood approach has many benefits. In fact, one recurring theme throughout NN design is that the gradient of the cost function should be large and predictable enough to be easily decreased (the path to minimize the cost function is thus easy to find). Functions that tend to saturate (to be read as: become very flat) make the gradient become very small, undermining this objective. The negative log-likelihood helps to avoid this problem for many models. </p>
-    
-    <h5> 2.2 Learning Conditional Statistics </h5>
-    <p>Sometimes instead of learning the full probability distribution we want only just one conditional statistic of <i>y</i> given <i>x</i>.
-    If we view our cost function as a <b>functional</b> (a mapping from functions to real numbers) we can think of learning as choosing a function rather than merely choosing a set of parameters. The cost functional will have its minimum at some specific function we desire:</p>
-    
-    $$ f^* = \arg \min_f \mathbb{E}_{x,y \sim {p}_{data}} || y -f(x)||^2$$
-    $$ \implies f^*(x) = \mathbb{E}_{y \sim {p}_{data}(y|x)}[y] $$
-    <p>This means that if we could train on infinitely many samples from the true data generating distribution, minimizing the mean squared error cost function gives a function that predicts the mean of <i>y</i> for each value of <i>x</i>.<br>
-    
-    Another important result is:</p>
-    $$ f^* = \arg \min_f \mathbb{E}_{x,y \sim \hat{p}_{data}} || y -f(x)||_1$$
-    <p>produces a function that predicts the <i>median</i> value of <i>y</i> for each <i>x</i>. This cost function is known as <b>mean absolute error</b>.
-    Note that MSE and MAE often produce poor results with gradient-based optimization because some neurons that <i>saturate</i> produce very small gradients when combined with this cost functions. That's why the negative log likelihood is more popular than MSE and MAE even when it's not necessary to estimate an entire distribution of probabilities.</p>
-    <br>
-    <br>
-    <h4> 3. Output Neurons </h4>
-    <p>The choice of the cost function is tightly coupled with the choice of the output units.
-    Suppose that the feedforward network provides a set of hidden features defined by:</p>
-    $$ h = f(x;\theta) $$
-    <p>The output layer provides some additional transformation to these features to complete the task of the network.</p>
-    
-    <h5> 3.1 Linear Neurons for Gaussian Output Distributions</h5>
-    <p>A layer of linear output units produces a vector of outputs</p>
-    $$ \hat{y} = W^Th + b$$
-    <p>These type of units are often used to produce the mean of a conditional Gaussian distribution:</p>
-    $$ P(Y=y|X=x) = \mathcal{N}(y, \hat{y}, I) $$
-    <p>In this case, as we've seen before, maximizing the log-likelihood is equivalent to minimizing the mean squared error.
-    An advantage of linear units is that they <b>do not saturate</b>.</p>
-    <h5> 3.2 Sigmoid Neurons for Bernoulli Output Distributions </h5>
-    <p>Suppose we have a binary classification problem. The maximum likelihood approach in this case is to define a Bernoulli distribution over <i>y</i> conditioned on <i>x</i>.
-    This means that the neural network needs just to predict</p>
-    $$ P(Y=1 | X=x) \in [0,1]$$
-    <p>A single sigmoid output unit can be exploited to do this:</p>
-    $$ \sigma(w^Th+b) = \frac{e^{w^Th + b}}{e^{w^Th + b} +1}$$
-    
-    <p>The sigmoid can be motivated by constructing an unnormalized probability distribution which does not sum to 1. We can then divide by an appropriate constant to obtain a valid probability distribution:</p>
-    $$ \log \tilde{P}(Y=y) = y(w^Th+b) = yz $$
-    $$ \implies P(y) = \sigma((2y-1)z) $$
-    <p>The loss function for maximum likelihood learning of a Bernoulli parametrized by a sigmoid is:</p>
-    $$ J(\theta) = -\log P(Y=y|X=x)$$
-    $$ = -\log \sigma((2y-1)z) = \zeta ((1-2y)z) \ \ \text{(softplus)}$$
-    <p>and its saturation occurs only when the model already has the right answer (<i>z - 2yz </i> is very negative). 
-    When we use other loss functions such as MSE the loss can saturate anytime the sigmoid saturates, which happens to near zero when <i>z</i> is strongly negative and near one when the <i>z</i> is strongly positive. That's why maximum likelihood is the preferred approach to training sigmoid output units.  </p>
-    
-    <h5> 3.3 Softmax Neurons for Multinoulli Output Distributions</h5>
-    <p>The softmax function can be used to represent a probability distribution over a discrete variable with <i>n</i> possible variables:</p>
-    $$ \hat{y}: \ \ \  \hat{y}_i = P(Y=i | X=x) \ \ , \ \ i \in \{1, 2, ..., n\}$$
-    <p>First, a linear layer predicts the unnormalized log probabilities:</p>
-    $$ z = W^Th+b, \ \ z_i=\log \tilde{P}(Y=i|X=x)$$
-    <p>An output layer composed of softmax neurons can exponentiate and normalize *z* to obtain the desired output:</p>
-    $$ \text{softmax}(z)_i = \frac{e^{z_i}}{\sum_j e^{z_j}} = \frac{\tilde{P}(Y=i|X=x)}{\sum_{j} \tilde{P}(Y=j|X=x)} = P(Y=i|X=x)$$
-    <p>Log-likelihood works particularly well here. Analogously to what we did with the sigmoid, for each training sample of class <i>i</i> we want to maximize the correspoding (log-)softmax:</p>
-    $$ \log P(Y=i|z) = \log\text{softmax}(z)_i = z_i -\log\sum_j e^{z_j}$$
-    <p>When maximizing the log-likelihood the first term encourages the i-th term of the sum to be pushed up, and all the other to be pushed to zero. When this happens the sum can be approximated roughly by the maximum over the components of <i>z</i>. The intution is that the cost function strongly penalizes the most active incorrect prediction. If the correct answer already has the largest input to the softmax, the terms will roughly cancel and will not contribute to the overall training cost, which will be dominated by the examples that are not yet correctly classified. </p>
-    
-    <p>What really happens under the hood after learning the whole training set is described by:</p>
-    $$ \text{softmax($z(x; \theta)$)}_i \approx \frac{\sum_{j=1}^m 1_{y^j =i, x^j=x}}{\sum_{j=1}^m1_{x^j=x}}$$
-    <p>Note that this is guaranteed to happen <b>so long as the model family is capable of representing the training distribution</b>. </p>
-    
-    <p>The argument <i>z</i> of our softmax-activated neuron can be produced in two different ways:</p>
-    <p><ul>
-    <li>we can use a linear layer a described above, but this overparametrizes the distribution, because the constraint that the <i>n</i> outputs must sum to 1 means that there are only <i>n-1</i> degrees of freedom, as the last probability can be derived from the others;</li>
-    <li>to avoid overparametrization, we can decide to put one of the parameters to zero; this is exactly what the sigmoid neuron does, as in that case <i>z</i> is two-dimensional and the first component (responsible to detect class 0) is always 0.</li>
-    </ul></p>
-    <p>It is interesting to note that the softmax function creates a form of <b>competition</b> between the units participating in it: their outputs always sum to one, which means that an increase in the value of one unit necessarily corresponds to a decrease in the value of the others. After the optimization of the weights and biases, it becomes a form of <b>winner-takes-all</b>.</p>
-    <br>
-    <br>
-    <br>
+<div class="container">
+
+<header style="margin: auto; text-align: center; margin-top: 30px;"><h3>Notes on FNN Loss Functions and Output/Hidden Neurons</h3></header>
+
+<p class="post-description">
+
+Brief notes about the most popular loss functions and output/hidden units used in feedforward neural networks, partly based on Chapter 6 of Goodfellow, Bengio, Yoshua <a href="https://www.deeplearningbook.org/"><i>Deep Learning</i></a> book.
+
+</p>
+
+  
+
+<h4>1. General Notions on Feedforward Networks</h4>
+
+<p>The goal of a feedforward network is to approximate some function. For example, classifiers are trained to approximate some function mapping an input to its category. In more general terms, a feedforward network defines a mapping
+
+</p>
+
+$$ y = f(x; \theta)$$
+
+<p>and learns the value of the parameters &theta; resulting in the best approximation of the <i>true signal</i> </p>
+
+$$ f^*(x)$$
+
+<p>which we only possess in the form of the (noisy) instances forming the training data.</p>
+
+<p>The function we have to approximate isn't always linear. In fact, linear models such as linear regression and logistic regression are appealing because they are fitted efficiently and reliably, either through an analytical solution or with convex optimization, but in complex real-world problems we often have to approximate functions that are non-linear with the inputs. To extend linear models to represent nonlinear functions we can use a map &phi; that projects our inputs into a higher dimensional space called <i>features' space</i>, where it's possible to use linear models for classification or regression. But how should we choose &phi; ?</p>
+
+<p>
+
+<ul>
+
+<li>one option is to leave the map undefined, exploiting the <i>kernel trick</i>; with this approach the <b>generalization to the test set often remains poor</b>;</li>
+
+<li>&phi; can be <b>manually engineered</b>; this is what happened in the specialized fields of speech recognition or computer vision; </li>
+
+<li>the strategy of deep learning is to <b>learn &phi; through a hidden layer</b> such that our network builds an approximation function in the form:</li>
+
+</ul>
+
+</p>
+
+$$ y = f(x; \theta, w) = \phi(x; \theta)^Tw $$
+
+<p>The largest difference between the linear models of statistical learning and neural networks is that the nonlinearity of a neural network causes the most famous loss functions to become non-convex. This means that there is no guarantee that the global optimum is unique and, even worse, gradient descent techniques may encounter many local optimums where the gradient is zero. </p>
+
+<p>
+
+What's more, deep learning models often have thousands of parameters that make the standard gradient descent algorithm too slow. That's why neural networks are usually fitted through stochastic gradient descent, which on the other hand is sensitive to the value of the initial parameters. In general the advice is to start with the parameters initialized to some small random values.
+
+</p>
+
+<br>
+
+<br>
+
+<h4> 2. Cost functions </h4>
+
+<h5>2.1 Learning Conditional Distributions with Maximum Likelihood</h5>
+
+<p>Suppose we have a set of <i>m</i> training instances </p>
+
+$$ \mathbb{X} = \{ x^1, ..., x^m\}$$
+
+<p>drawn independently from the <b>true but unknown</b> distribution <b><i>p<sub>data</sub>(x)</i></b>.<br>
+
+Let <b><i>p<sub>model</sub>(x; &theta;)</i></b> be a parametric family of probability distributions over the same space indexed by &theta; . <b><i>p<sub>model</sub>(x; &theta;)</i></b> maps any configuration <i>x</i> to a real number estimating the true probability distribution of the training examples.
+
+The maximum likelihood estimator for &theta; is then defined as:</p>
+
+$$ \theta_{ML} = \arg \max_\theta p_{model}(\mathbb{X}; \theta) = \arg \max_\theta \prod_{i=1}^m p_{model}(x^i; \theta) \ \ (\text{for i.i.d.)} $$
+
+<p>This product is often inconvenient because subject to numerical underflow. Alternatively we can calculate:</p>
+
+$$ \theta_{ML} = \arg \max_\theta \sum_{i=1}^m \log p_{model} (x^i; \theta) = $$
+
+$$ = \arg \max_\theta \frac{1}{m}\sum_{i=1}^m \log p_{model} (x^i; \theta)$$
+
+$$ = \arg \max_\theta \mathbb{E}_{x \sim \hat{p}_{data}}\log p_{model}(x; \theta) $$
+
+<p>which can be interpreted as minimizing the dissimilarity between the empirical distribution of training points we actually have and the model distribution parametrized by &theta; . <b>Minimizing this dissimilarity corresponds to minimizing the cross-entropy of the two distributions</b>. Notice that any loss function consisting of a negative log likelihood has the effect of minimizing the cross-entropy between the empirical distribution defined by the training set and the probability distribution defined by the model. For example, the mean squared error is the cross-entropy between the empirical distribution and a Gaussian model.</p>
+
+<p>These general considerations are particularly useful because our neural networks often want to build a parametric model defining a distribution:</p>
+
+$$ P(Y=y|X=x; \theta)$$
+
+<p>to choose the output using the principle of maximum likelihood. This means <b>we can use the cross entropy between the training data and the model's predictions as the cost function</b>:</p>
+
+$$ J(\theta) = -\mathbb{E}_{x,y \sim \hat{p}_{data}} \log p_{model} (Y = y; X = x; \theta) $$
+
+$$ = -\frac{1}{m}\sum_{j=1}^m \log p_{model}(Y=y^j ; X=x^j; \theta) $$
+
+<p>with the specific form of the cost function changing from model to model. For example if:</p>
+
+$$ p_{model} (Y = y|X=x ; \theta) = \mathcal{N}(y; f(x; \theta), I) $$
+
+<p>it is easy to see that under the hood we are minimizing the <b>mean squared error cost</b>:</p>
+
+$$ J(\theta) = \mathbb{E}_{x,y \sim \hat{p}_{data}} || y - f(x;\theta)||^2 $$
+
+$$ = -\frac{1}{m}\sum_{j=1}^m ||y^j -f(x^j; \theta)||^2$$
+
+<p>The maximum likelihood approach has many benefits. In fact, one recurring theme throughout NN design is that the gradient of the cost function should be large and predictable enough to be easily decreased (the path to minimize the cost function is thus easy to find). Functions that tend to saturate (to be read as: become very flat) make the gradient become very small, undermining this objective. The negative log-likelihood helps to avoid this problem for many models. </p>
+
+<h5> 2.2 Learning Conditional Statistics </h5>
+
+<p>Sometimes instead of learning the full probability distribution we want only just one conditional statistic of <i>y</i> given <i>x</i>.
+
+If we view our cost function as a <b>functional</b> (a mapping from functions to real numbers) we can think of learning as choosing a function rather than merely choosing a set of parameters. The cost functional will have its minimum at some specific function we desire:</p>
+
+$$ f^* = \arg \min_f \mathbb{E}_{x,y \sim {p}_{data}} || y -f(x)||^2$$
+
+$$ \implies f^*(x) = \mathbb{E}_{y \sim {p}_{data}(y|x)}[y] $$
+
+<p>This means that if we could train on infinitely many samples from the true data generating distribution, minimizing the mean squared error cost function gives a function that predicts the mean of <i>y</i> for each value of <i>x</i>.<br>
+
+Another important result is:</p>
+
+$$ f^* = \arg \min_f \mathbb{E}_{x,y \sim \hat{p}_{data}} || y -f(x)||_1$$
+
+<p>produces a function that predicts the <i>median</i> value of <i>y</i> for each <i>x</i>. This cost function is known as <b>mean absolute error</b>.
+
+Note that MSE and MAE often produce poor results with gradient-based optimization because some neurons that <i>saturate</i> produce very small gradients when combined with this cost functions. That's why the negative log likelihood is more popular than MSE and MAE even when it's not necessary to estimate an entire distribution of probabilities.</p>
+
+<br>
+
+<br>
+
+<h4> 3. Output Neurons </h4>
+
+<p>The choice of the cost function is tightly coupled with the choice of the output units.
+
+Suppose that the feedforward network provides a set of hidden features defined by:</p>
+
+$$ h = f(x;\theta) $$
+
+<p>The output layer provides some additional transformation to these features to complete the task of the network.</p>
+
+<h5> 3.1 Linear Neurons for Gaussian Output Distributions</h5>
+
+<p>A layer of linear output units produces a vector of outputs</p>
+
+$$ \hat{y} = W^Th + b$$
+
+<p>These type of units are often used to produce the mean of a conditional Gaussian distribution:</p>
+
+$$ P(Y=y|X=x) = \mathcal{N}(y, \hat{y}, I) $$
+
+<p>In this case, as we've seen before, maximizing the log-likelihood is equivalent to minimizing the mean squared error.
+
+An advantage of linear units is that they <b>do not saturate</b>.</p>
+
+<h5> 3.2 Sigmoid Neurons for Bernoulli Output Distributions </h5>
+
+<p>Suppose we have a binary classification problem. The maximum likelihood approach in this case is to define a Bernoulli distribution over <i>y</i> conditioned on <i>x</i>.
+
+This means that the neural network needs just to predict</p>
+
+$$ P(Y=1 | X=x) \in [0,1]$$
+
+<p>A single sigmoid output unit can be exploited to do this:</p>
+
+$$ \sigma(w^Th+b) = \frac{e^{w^Th + b}}{e^{w^Th + b} +1}$$
+
+<p>The sigmoid can be motivated by constructing an unnormalized probability distribution which does not sum to 1. We can then divide by an appropriate constant to obtain a valid probability distribution:</p>
+
+$$ \log \tilde{P}(Y=y) = y(w^Th+b) = yz $$
+
+$$ \implies P(y) = \sigma((2y-1)z) $$
+
+<p>The loss function for maximum likelihood learning of a Bernoulli parametrized by a sigmoid is:</p>
+
+$$ J(\theta) = -\log P(Y=y|X=x)$$
+
+$$ = -\log \sigma((2y-1)z) = \zeta ((1-2y)z) \ \ \text{(softplus)}$$
+
+<p>and its saturation occurs only when the model already has the right answer (<i>z - 2yz </i> is very negative).
+
+When we use other loss functions such as MSE the loss can saturate anytime the sigmoid saturates, which happens to near zero when <i>z</i> is strongly negative and near one when the <i>z</i> is strongly positive. That's why maximum likelihood is the preferred approach to training sigmoid output units. </p>
+
+<h5> 3.3 Softmax Neurons for Multinoulli Output Distributions</h5>
+
+<p>The softmax function can be used to represent a probability distribution over a discrete variable with <i>n</i> possible variables:</p>
+
+$$ \hat{y}: \ \ \ \hat{y}_i = P(Y=i | X=x) \ \ , \ \ i \in \{1, 2, ..., n\}$$
+
+<p>First, a linear layer predicts the unnormalized log probabilities:</p>
+
+$$ z = W^Th+b, \ \ z_i=\log \tilde{P}(Y=i|X=x)$$
+
+<p>An output layer composed of softmax neurons can exponentiate and normalize *z* to obtain the desired output:</p>
+
+$$ \text{softmax}(z)_i = \frac{e^{z_i}}{\sum_j e^{z_j}} = \frac{\tilde{P}(Y=i|X=x)}{\sum_{j} \tilde{P}(Y=j|X=x)} = P(Y=i|X=x)$$
+
+<p>Log-likelihood works particularly well here. Analogously to what we did with the sigmoid, for each training sample of class <i>i</i> we want to maximize the correspoding (log-)softmax:</p>
+
+$$ \log P(Y=i|z) = \log\text{softmax}(z)_i = z_i -\log\sum_j e^{z_j}$$
+
+<p>When maximizing the log-likelihood the first term encourages the i-th term of the sum to be pushed up, and all the other to be pushed to zero. When this happens the sum can be approximated roughly by the maximum over the components of <i>z</i>. The intution is that the cost function strongly penalizes the most active incorrect prediction. If the correct answer already has the largest input to the softmax, the terms will roughly cancel and will not contribute to the overall training cost, which will be dominated by the examples that are not yet correctly classified. </p>
+
+<p>What really happens under the hood after learning the whole training set is described by:</p>
+
+$$ \text{softmax($z(x; \theta)$)}_i \approx \frac{\sum_{j=1}^m 1_{y^j =i, x^j=x}}{\sum_{j=1}^m1_{x^j=x}}$$
+
+<p>Note that this is guaranteed to happen <b>so long as the model family is capable of representing the training distribution</b>. </p>
+
+<p>The argument <i>z</i> of our softmax-activated neuron can be produced in two different ways:</p>
+
+<p><ul>
+
+<li>we can use a linear layer a described above, but this overparametrizes the distribution, because the constraint that the <i>n</i> outputs must sum to 1 means that there are only <i>n-1</i> degrees of freedom, as the last probability can be derived from the others;</li>
+
+<li>to avoid overparametrization, we can decide to put one of the parameters to zero; this is exactly what the sigmoid neuron does, as in that case <i>z</i> is two-dimensional and the first component (responsible to detect class 0) is always 0.</li>
+
+</ul></p>
+
+<p>It is interesting to note that the softmax function creates a form of <b>competition</b> between the units participating in it: their outputs always sum to one, which means that an increase in the value of one unit necessarily corresponds to a decrease in the value of the others. After the optimization of the weights and biases, it becomes a form of <b>winner-takes-all</b>.</p>
+
+<br>
+
+<br>
+
+<h4>4. Hidden Units </h4>
+<p>The design of hidden neurons is a very active area of research and does not yet have definitive guiding principles. In general, <b>ReLUs are an excellent default choice</b>. The design process consists of trial and error based on intuitions about what could work well in a certain scenario. </p>
+<p>In the following subsections the hidden units can be described as accepting a vector of inputs <i>x</i>, computing an affine transformation on it to produce <i>z</i> 
+  $$ z = W^T x + b$$and applying an element-wise non linear function $$ g(z) = g(W^T x + b) $$
+</p>
+<h5> 4.1 Rectified Linear Units </h5>
+<p>
+Rectified Linear Units (ReLU) use the activation function:</p>
+$$ g(z) = \max \{ 0, z \} $$
+<p>
+ReLUs are easy to optimize because they are similar to linear units, with the difference of outputting zero across half their domain. This makes their gradient large when they are active.
+</p>
+<p>
+<b>It is paritcularly important in the case of ReLUs to initialize the weights of their affine transformation to some small positive value</b>. This makes it likely that the units will be initially active for most inputs in the training set and allow their derivatives to pass through the chain rule.
+</p>
+
+<h5> 4.2 Logistic Sigmoid and Hyperbolic Tangent</h5>
+
+<p>
+Sigmoid units were broadly used before the introduction of ReLUs:
+$$ g(z) = \sigma (z) $$
+together with the hyperbolic tangent function:
+$$ g(z) = \tanh (z) = 2\sigma (2z) -1 $$
+We have seen above that sigmoid units try to predict the probability that a binary variable belongs to class 1. Unlike linear units, sigmoidal neurons saturate across most of their domain: they saturate to a low value when <i>z</i> is very negative and to a high value when <i>z</i> is very positive. The only portion of the domain where they are strongly sensitive to the input is near the origin. This makes gradient-based learning difficult. For this reason, <b>their use as hidden units in FNN is now discouraged</b>. Also, their use as output units makes sense only when the loss function can undo their saturation, as in the case of negative log likelihood. 
+</p>
+
+<p>If a sigmoidal function must be used, the hyperbolic tangent generally performs better than the logistic sigmoid. Near the origin it's more similar to the identity function and this has many benefits when the activation functions are kept small:
+$$ \hat{y} = w^T \tanh (U^T \tanh (V^T x)) \approx w^T U^T V^T x $$
+
+</p>
+
+<h5>4.3 Other Hidden Units</h5>
+<p>Other famous hidden units are the <b><i>Softplus</i></b> units:
+$$ g(a) = \zeta (a) = \log (1 + e^a) $$
+which are smooth versions of the ReLUs. <b>Their use is generally discouraged</b>. The Softplus case demonstrates that the performance of hidden unit types can be counterintuitive: one would expect that continuous differentiability is an advantage over the ReLUs, but empirical results have proved the opposite.
+</p>
+<br>
+<p>
+The <i>hard hyperbolic tangent</i> unit is shaped similarly to the standard hyperbolic tangent and the ReLUs, but unlike the latter it has lower bound:
+$$ g(a) = \max ( -1 , \min (1, a) ) $$
+</p>
+<br>
+<br>
+<br>
+
 </div>
+
 </body>
+
 </html>
