@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="utf-8">
+  <title>Notes on Generative Adversarial Networks (1)</title>
+  <meta name="description" content="notes on generative adversarial networks">
+  <meta name="author" content="Matteo Del Seppia">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+  </script>
+
+  <link href="https://fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+
+  <link rel="stylesheet" href="../css/normalize.css">
+  <link rel="stylesheet" href="../css/skeleton.css">
+  <link rel="stylesheet" href="../css/post.css">
+
+  <link rel="icon" type="image/png" href="../images/notes.png">
+
+</head>
+<body>
+
+  <div class="container">
+    <header style="margin: auto; text-align: center; margin-top: 30px;"><h3>Notes on Generative Adversarial Networks (1)</h3></header>
+    <p class="post-description">
+        Notes on: GANs based on the <a href="https://arxiv.org/abs/1406.2661">original paper</a> by Goodfellow et al., DCGANs based on the <a href="https://arxiv.org/abs/1511.06434v2">original paper</a> by Radford, Metz et al., InfoGANs based on the <a href="https://arxiv.org/abs/1606.03657">original paper</a> by Chen, Duan et al., <a href="https://arxiv.org/abs/1805.08318v2">original paper</a> based on the original paper by Zhang, Goodfellow et al. 
+    </p>
+    <h4> 1. GANs </h4>
+    <p> The original GANs paper proposed to pit the generative model <i>against</i> an adversary. The adversary is a discriminative model with the only goal of determining if a sample (e.g. an image) is from the <i>model distribution</i> or the <i>data distribution</i> (our reference dataset). We can think of this mechanism as a <b>minimax game</b> and we want to find a Nash equilibrium that can lead to perfect counterfeits of the original data. <br>
+    Both the discriminative model and the generative model in the original paper are multilayer perceptrons. The generative model <b>takes as input random noise</b>. <br>
+    </p>
+    <p>To build the generative model, some prior on input noise variables must be defined, together with the mapping to the data space:</p>
+    $$ z \text{ is noise}\ \ \ , \ \  p_z(z) \text{ is the prior} \ \ \ ,  \ \ G(z;  \theta_g) : \text{mapping from noise to data space}$$
+    <p> The mapping <i>G</i> is a differentiable function represented by a MLP with some parameters. <br>
+    A second MLP represents the discriminative model:
+    </p>
+    $$ D(x; \theta_d) \in [0;1]$$
+    <p><i>D</i> outputs the probability that some object in the data space comes from the model distribution <i><b>p<sub>g</sub></b></i> rather than the data distribution <i><b>p<sub>data</sub></b></i>.
+    </p>
+    <p><i>D</i> is trained to maximize the probability of assigning the correct label (fake/real) to both training instances from the reference dataset and samples from the generative model. At the same time, <i>G</i> is trained to minimize:
+    </p>
+    $$ \log(1 - D(G(z)) \approx \begin{cases}  0 & G(z) \text{ "looks" fake} \\ -\infty & G(z) \text{ "looks" real} \end{cases}$$
+    <p>The minimax game played by the two actors can be expressed as:</p>
+    $$ \min_G \min_D V(D,G) = \mathbb{E}_{x \sim p_{data}}\big[\log D(x)\big] + \mathbb{E}_{z \sim p_z(z)} \big[\ \log\big(1-D(G(z))\big) \ \big] $$
+    <p>Since optimizing <i>D</i> to completion in the inner loop of training is prohibitive (you should at each step re-train the discriminative model) the paper proposes of alternating between <i>k</i> steps of optimization for the discriminative model and one step of optimization for <i>G</i>. This should result in maintaining <i>D</i> near its optimal solution, given that <i>G</i> does not converge too quickly.  </p>
+    <p>In reality, during the early training phases the discriminative model is highly confident of what is real and what it isn't, because the generative model is not good. This leads to a saturation of the loss function for <i>G</i>, as the loss is always very close to zero. A solution to this is training the generative model to minimize a slightly different loss, which has proven to have much stronger gradients early in learning: </p>
+    $$ -\log D(G(z)) \approx \begin{cases}  0 & G(z) \text{ "looks" real} \\ +\infty & G(z) \text{ "looks" fake}\end{cases}$$
+    <h5> 1.1 Theoretical results </h5>
+    <p>Since we have a <i>minimax</i> game, the paper investigates the loss function to see if a Nash equilibrium exists. This is done in two steps: first, the loss function is maximized with respect to the discriminative model, and secondly a global minimum for the maximum is searched with respect to the generative model.
+    <br>The <b>first theoretical proposition</b> of the paper states that:</p>
+    $$ \text{optimal discriminator for fixed $G$: }\ \  D^*_G (x) = \frac{p_{data}(x)}{p_{data}(x) +p_g(x)}$$
+    <p>Note that the training objective for the discriminative model when <i>G</i> is fixed can be interpreted as maximizing the log-likelihood of its estimation of the conditional probability <i>P(Y = y | X = x)</i> where <i>y</i> is a binary variable indicating if <i>x</i> comes from the generative model distribution or the reference dataset distribution:
+    </p>
+    $$ C(G) = \max_D V(G, D) = \mathbb{E}_{x \sim p_{data}}\big[\log D^*_G(x)\big] + \mathbb{E}_{z \sim p_z(z)} \big[\ \log\big(1-D^*_G(G(z))\big) \ \big] $$
+    $$ = \mathbb{E}_{x \sim p_{data}}\big[\log D^*_G(x)\big] + \mathbb{E}_{x \sim p_g(x)} \big[\ \log\big(1-D^*_G(x\big) \ \big]$$
+    $$ = \mathbb{E}_{x \sim p_{data}}\bigg[ \log \frac{p_{data}(x)}{p_{data}(x) +p_g(x)} \bigg] + \mathbb{E}_{x \sim p_g(x)} \bigg[ \log \frac{p_{g}(x)}{p_{data}(x) +p_g(x)} \bigg] $$
+    
+    <p>The <b>first theorem in the paper</b> states that the <b>global minimum of the virtual training criterion <i>C(G)</i></b> is achieved if and only if the data distribution of the reference dataset is equal to the distribution generated by <i>G</i>, and at that point:  </p>
+    $$ p_g = p_{data} \implies C(G) = -\log4$$
+    <p>and at that point the generative model is perfectly replicating the distribution of the reference dataset.<br>
+    The <b>second proposition</b> in the paper is particularly important because is about the convergence of training. It states that if:</p>
+    <ul>
+    <li>the two models have enough capacity</li>
+    <li>at each step the discriminative model is allowed to reach its optimum given the fixed generative model of the step</li>
+    <li><i>p<sub>g</sub></i> is updated to improve the criterion:</li>
+    </ul>
+    $$ = \mathbb{E}_{x \sim p_{data}}\big[\log D^*_G(x)\big] + \mathbb{E}_{x \sim p_g(x)} \big[\ \log\big(1-D^*_G(x\big) \ \big]$$
+    <p>then <b>it's guaranteed that the distribution of the generated data will converge to the one of reference data</b> (<i>p<sub>g</sub></i> converges to <i>p<sub>data</sub></i>) .<br>
+    The second condition is of particular importance, because the discriminative model must be <i>synchronized</i> well with <i>G</i> during training, <b>as <i>G</i> must not be trained too much in order to avoid <i>z</i> to be collapsed to always the same value <i>x</i> </b>, thus allowing to have enough diversity to model the distribution of the reference dataset. </p>
+    <p>Note that all these theoretical results are particularly useful because <b>no assumptions have been made on the forms of <i>D, G</i></b>. This is good for us because it means that a solution to the problem exists in theory, but on the other hand the forms of <i>p<sub>g</sub></i> distributions that an MLP can approximate is limited. Also, we are not optimizing directly <i>p<sub>g</sub></i>, but <i>&theta;<sub>g</sub></i> in its stead.  </p>
+    <br>
+    <br>
+    
+    <h4>2. DCGAN (2015)</h4>
+    <p>Since GANs are known to be unstable during training, often producing nonsensical outputs, the DCGAN paper from Radford, Metz et al. proposed to use deep convolutional architectures to enhance stability during training in most settings.
+    Their approach makes use of:</p>
+    <ul>
+    <li><b>all convolutional nets</b>, which means that no pooling functions (e.g. maxpooling) are used, only strided convolutions, allowing the network to learn its own spatial downsampling/upsampling
+    </li>
+    <li>
+    <b>no fully connected layers on top of convolutional features</b>: the paper claims that techniques like global average pooling increased model stability but decrease convergence speed;
+    </li>
+    <li>
+    <b>batch normalization</b>: it stabilizes learning by normalizing the input to each neuron, helping with poor initialization, vanishing gradient issues and the collapse of all samples to a single point (which is a common problem in GANs)
+    </li>
+    <li>
+    <b>Leaky/ReLU activations</b>: ReLUs are used in the generator after each convolutional layer, while LeakyReLUs are used in all layers for the discriminator (except the output); 
+    </li>
+    </ul>
+    
+    <p>Details for construction of a DCGAN architecture:</p>
+    <ul>
+    <li>no preprocessing except scaling to the range of hyperbolic tangent activation</li>
+    <li>mini-batch size of 128</li>
+    <li>all weights are initialized following a gaussian distribution with mean zero and standard deviation 2e-2</li>
+    <li>LeakyReLUs have leak slope of 0.2</li>
+    <li>Adam optimizer with momentum 0.5</li>
+    <li>fixed learning rate of 2e-4</li>
+    <li>optional center-cropping if resizing images is needed</li>
+    </ul>
+    <h5>2.1 What happens inside DCGANs </h5>
+    <p>Experiments conducted on DCGAN by the authors of the paper show that the generator learns major (common) components of the representations. An experiment on a bedroom dataset was conducted to see how the generated data would have changed if windows were to be removed from the spatial locations of the feature maps at some convolutional layer of the generative model. They found that the removed windows were replaced by the generator with other common objects, like TVs.</p>
+    <br>
+    <br>
+    
+    <h4> 3. InfoGAN </h4>
+    <p> InfoGAN can learn disentangled features from a reference dataset of images and is able to synthetize new samples through a generative model. Some inputs of the generative model can be used to inject the required characteristics into the sample (e.g. a sad face).
+    </p>
+    <p>The paper proposes to make a significant modification to the original GAN: instead of using a noise vector with components drawn from a continuous normal distribution, it decomposes the noise in two parts:</p>
+    <ul>
+    <li><i>z</i>: a source of incompressible noise</li>
+    <li><i>c</i>: which is called <i><b>latent code</b></i> and targets the most common semantic features of the data distribution</li>
+    </ul>
+    <p>Also, a factored distribution is assumed for the latent variables:</p>
+    $$ c = (c_1, ..., c_L) , \ \ P(c_1, ..., c_L) = \prod_{i=1}^L P(c_i)$$
+    <p>InfoGAN proposes to <i>discover</i>  the latent factors have to be in an unsupervised way. A standard GAN in some way ignores the semantic value of the latent code, because it's only goal is to generate an image that it's good enough to cheat the discriminator. Thus, the loss function of standard GANs has to be changed.
+    </p>
+    <p>
+    The goal is to have high mutual information between latent codes and the generator data distribution <i>G(z, c)</i> . <br>
+    Remember that mutual information between two random variables measures the amount of information learned from the knowledge of the first random variable about the second random variable, and can be expressed as the difference of two entropy terms:
+    </p>
+    $$ I(X;Y) = H(X) - H(X|Y) = H(Y) -H(Y|X)$$
+    <p>If the two variables are independent their mutual information is zero because knowing something about one variable does not disclose any information about the other. On the other hand, mutual information is maximum when the one variable can be obtained through a deterministic, invertible function applied on the other variable.</p>
+    <p>Thus, InfoGAN's authors propose to solve the problem with an <i><b>information-regularized minimax game</i></b>:
+    
+    </p>
+    $$ \min_G \max_D V_I(D,G) = V(D,G) - \lambda I(c; G(z, c))$$
+    <p>In practice, the term on the right is difficult to maximize because we don't have access to the posterior probability <i>P(c | x)</i>.<br>
+    A lower bound can been found using an auxiliary distribution <i>Q</i> that estimates <i>P(c | x)</i>:
+    </p>
+    $$ I(c; G(z, c)) = H(c) - H(c |G(z, c)) $$
+    $$ = \mathbb{E}_{x \sim G(z,c)} \big[ \mathbb{E}_{c' \sim P(c|x)} [\log P(c'|x)] \big] + H(c)$$
+    $$= \mathbb{E}_{x \sim G(z,c)} \big[ \mathbb{E}_{c' \sim P(c|x)} [D_{KL}(P(\cdot|x) || Q(\cdot|x)) + \mathbb{E}[\log Q(c'|x)] ]\big] + H(c)$$
+    $$ \geq \mathbb{E}_{x \sim G(z,c)} \big[ \mathbb{E}_{c' \sim P(c|x)} [\log Q(c'|x)] \big] + H(c)$$
+    <p>where the last two passages come from the fact that using an estimator to approximate the real distribution <i>P(c | x)</i> will certainly degrade the mutual information estimation, as the Kullback-Leibler divergence is always positive.</p>
+    <p>Finally,  paper states the under suitable regularity conditions we have:</p>
+    $$ L_I(G, Q) = \mathbb{E}_{c \sim P(c), x \sim G(z,c)} \big[ \log Q(c|x) \big] + H(c) $$
+    $$ = L_I(G, Q) = \mathbb{E}_{x \sim G(z,c)} \big[ \mathbb{E}_{c' \sim P(c|x)}[\log Q(c'|x)] \big] + H(c) $$
+    $$ \leq I(c, G(z,c))$$
+    Hence, the loss on mutual information can be maximized with respect to Q directly and G directly, and can be added to the GAN's loss function with no changes in the standard training procedure.
+    The final minimax game for InfoGANs is:
+    $$ \min_{G,Q} = \max_D V_{\text{InfoGAN}}(D,G,Q) = V(D,G) - \lambda L_I (G, Q)$$
+    
+    <h5>3.1 InfoGAN Implementation</h5>
+    <p>The auxiliary distribution is approximated by through a neural network. Moreover, the neural network to calculate <i>Q</i> shares all its convolutional layers with the discriminative model and has only one final fully connected layer to output the parameters for the conditional distribution <i>Q(c|x)</i>. The paper states that the mutual information loss always converges faster than normal GAN objectives, hence using InfoGAN is essentially cost-free when implementing GANs.
+    To get a categorical latent code a softmax output is good. For a continuous latent code, several options are possible, depending on what the true posterior probability is.<br>
+    Note that &lambda; is an extra hyperparameter, but the paper states that it's easy to tune and should be set to 1 for discrete latent codes.<br>
+    The paper says that an implementation of InfoGAN on top of DCGAN should guarantee enough stabilization to the network.<br>
+    On MNIST a uniform categorical distribution for latent codes can be used:
+    </p>
+    $$ c \sim Cat(K=10, p=0.1)$$
+    <p>Also, a mix of categorical and continous latent factors can be used:</p>
+    $$ c_1 \sim Cat(K=10, p=0.1) , \ \ c_2, c_3 \sim U(-1, 1)$$
+    <p>On MNIST changing categorical code has the effect of switching the digit, while the continuous codes capture information like width or rotation.</p>
+    
+    <br>
+    <br>
+    
+    <h4>4. SAGAN</h4>
+    <p>The paper illustrating Self-Attention Generative Adversarial Networks proposes to apply to apply the concept of attention to GANs, allowing for long-range dependency modeling.<br>
+    GANs are often good at generating textures (sky, ocean, landscapes) but fail to capture geometric features or patterns that are relevant for some classes of images. The paper states that this could be due to the local nature of convolutional layers, which have trouble at recognizing long-range dependencies in the data. What's more, battling this problem by increasing the size of the kernels causes the loss of computational and statistical efficiency.<br>
+    Self-attention is proposed as a method to solve these problems. Self-attention calculates the response at a position as a weighted sum of the features at <i>all</i> positions, where the weights (<i>attention vectors</i>) are calculated with a small computational cost.
+    </p>
+    <p>
+    The image features from one hidden convolutional layer are transformed into two feature spaces to calculate the attention:
+    </p>
+    
+    $$ x \in \mathbb{R}^{C \times N} \implies f(x)=W_fx \ , \ g(x) = W_g x \ , \ W_g \in \mathbb{R}^{\bar{C} \times C}, W_f \in \mathbb{R}^{\bar{C} \times C}$$
+    $$ \beta_{j,i} = \frac{e^{s_{ij}}}{\sum_{i=1}^N e^{s_{ij}}} \ , \ \ \ s_{ij} = f(x_i)^Tg(x_i) $$
+    <p>
+    and <i>&beta;<sub>j,i</sub></i> indicates the extent to which the model takes in consideration the <i>i-th</i> component of the image features to generate the <i>j-th</i> region.<br>
+    The output of the attention layer is:
+    </p>
+    $$ o = (o_1, o_2, ..., o_N) \in \mathbb{R}^{C \times N} $$
+    $$ o_j = v\bigg((\sum_{i=1}^N \beta_{j_i} h(x_i) \bigg) \ , \ h(x_i) = W_hx_i, \ \ v(x_i) = W_vx_i \ , \ \ W_h \in \mathbb{R}^{\bar{C} \times C} \ , \ W_v \in \mathbb{R}^{C \times \bar{C}}$$
+    <p>and all the weight matrices are implemented as <i>1x1</i> convolutions and the number of channels is divided (multiplied) by 8 at each layer.<br>
+    Also, the output of the attention layer is summed to the output of the hidden convolutional after being scaled:
+    </p>
+    $$ y_i = \gamma o_i +x_i$$
+    <p>where the scale &gamma; is a learnable scalar initialized to zero. This allows the network to start as a somewhat standard GAN relying on local neighborhood during convolutional layers, and then gradually to assign more weight to non-local dependencies as the scaling factor increases.</p>
+    <p>The loss functions for the discriminator and the generator are thus presented:</p>
+    $$ L_D = - \mathbb{E}_{(x,y) \sim p_{data}} [\min (0, -1+D(x,y))] - E_{z \sim p_z, y \sim p_{data}} [\min (0, -1 -D(G(z)))]$$
+    $$ L_G = - \mathbb{E}_{z \sim p_z, y \sim p_{data}} D(G(z), y)$$
+    <h5>5.1 Training Stabilization Techniques </h5>
+    <p>The paper confirms other studies by claiming that <b>spectral normalization on the discriminator and the generator helps with training</b>. Spectral normalization constraints the Lipschitz constant of the discriminator by restricting the spectral norm of each layer. Spectral normalization is claimed to be particularly useful because does not required hyperparameter tuning, as setting the norm to 1 for all layers works well. Moreover, spectral normalization on the generator can prevent exploding gradients and allows for fewer discriminator updates per generator update, reducing the computational cost for training.</p>
+    <p>Also, separate learning rates are used for the generator and the discriminator. This fastens the training of the discriminator and of the overall training process by allowing fewer discriminator updates for each generator update.</p>
+    <h5> 5.2 Implementation Details </h5>
+    <p>SAGAN is designed to generate 128 x 128 images. Other details are:
+    </p>
+    <ul>
+    <li>spectral normalization is used for all layers in both the generator and discriminator</li>
+    <li>Adam optimizer with b1 = 0 and b2 = 0.9</li>
+    <li>learning rate for the discriminator is 4e-4</li>
+    <li>learning rate for the generator is 1e-4</li>
+    <li>conditional batch normalization is used in the generator</li>
+    <li>a projection discriminator is used</li>
+    </ul>
+    <br>
+    <br>
+    <br>
+    
+</div>
+</body>
+</html>
