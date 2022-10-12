@@ -117,7 +117,7 @@
     </ul>
     <p>Also, a factored distribution is assumed for the latent variables:</p>
     $$ c = (c_1, ..., c_L) , \ \ P(c_1, ..., c_L) = \prod_{i=1}^L P(c_i)$$
-    <p>InfoGAN proposes to <i>discover</i>  the latent factors have to be in an unsupervised way. A standard GAN in some way ignores the semantic value of the latent code, because it's only goal is to generate an image that it's good enough to cheat the discriminator. Thus, the loss function of standard GANs has to be changed.
+    <p>InfoGAN proposes to <i>discover</i>  the latent factors in an unsupervised way. A standard GAN in some way ignores the semantic value of the latent code, because its only goal is to generate an image that it's good enough to cheat the discriminator. Thus, the loss function of standard GANs has to be changed.
     </p>
     <p>
     The goal is to have high mutual information between latent codes and the generator data distribution <i>G(z, c)</i> . <br>
@@ -146,7 +146,7 @@
     $$ \min_{G,Q} = \max_D V_{\text{InfoGAN}}(D,G,Q) = V(D,G) - \lambda L_I (G, Q)$$
     
     <h5>3.1 InfoGAN Implementation</h5>
-    <p>The auxiliary distribution is approximated by through a neural network. Moreover, the neural network to calculate <i>Q</i> shares all its convolutional layers with the discriminative model and has only one final fully connected layer to output the parameters for the conditional distribution <i>Q(c|x)</i>. The paper states that the mutual information loss always converges faster than normal GAN objectives, hence using InfoGAN is essentially cost-free when implementing GANs.
+    <p>The auxiliary distribution is approximated through a neural network. Moreover, the neural network approximating <i>Q</i> shares all its convolutional layers with the discriminative model and has only one final fully connected layer to output the parameters for the conditional distribution <i>Q(c|x)</i>. The paper states that the mutual information loss always converges faster than normal GAN objectives, hence using InfoGAN is essentially cost-free when implementing GANs.
     To get a categorical latent code a softmax output is good. For a continuous latent code, several options are possible, depending on what the true posterior probability is.<br>
     Note that &lambda; is an extra hyperparameter, but the paper states that it's easy to tune and should be set to 1 for discrete latent codes.<br>
     The paper says that an implementation of InfoGAN on top of DCGAN should guarantee enough stabilization to the network.<br>
@@ -161,7 +161,7 @@
     <br>
     
     <h4>4. SAGAN</h4>
-    <p>The paper illustrating Self-Attention Generative Adversarial Networks proposes to apply to apply the concept of attention to GANs, allowing for long-range dependency modeling.<br>
+    <p>The paper illustrating Self-Attention Generative Adversarial Networks proposes to apply the concept of attention to GANs, allowing for long-range dependency modeling.<br>
     GANs are often good at generating textures (sky, ocean, landscapes) but fail to capture geometric features or patterns that are relevant for some classes of images. The paper states that this could be due to the local nature of convolutional layers, which have trouble at recognizing long-range dependencies in the data. What's more, battling this problem by increasing the size of the kernels causes the loss of computational and statistical efficiency.<br>
     Self-attention is proposed as a method to solve these problems. Self-attention calculates the response at a position as a weighted sum of the features at <i>all</i> positions, where the weights (<i>attention vectors</i>) are calculated with a small computational cost.
     </p>
