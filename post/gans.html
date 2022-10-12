@@ -185,10 +185,10 @@
     <p>The loss functions for the discriminator and the generator are thus presented:</p>
     $$ L_D = - \mathbb{E}_{(x,y) \sim p_{data}} [\min (0, -1+D(x,y))] - E_{z \sim p_z, y \sim p_{data}} [\min (0, -1 -D(G(z)))]$$
     $$ L_G = - \mathbb{E}_{z \sim p_z, y \sim p_{data}} D(G(z), y)$$
-    <h5>5.1 Training Stabilization Techniques </h5>
+    <h5>4.1 Training Stabilization Techniques </h5>
     <p>The paper confirms other studies by claiming that <b>spectral normalization on the discriminator and the generator helps with training</b>. Spectral normalization constraints the Lipschitz constant of the discriminator by restricting the spectral norm of each layer. Spectral normalization is claimed to be particularly useful because does not required hyperparameter tuning, as setting the norm to 1 for all layers works well. Moreover, spectral normalization on the generator can prevent exploding gradients and allows for fewer discriminator updates per generator update, reducing the computational cost for training.</p>
     <p>Also, separate learning rates are used for the generator and the discriminator. This fastens the training of the discriminator and of the overall training process by allowing fewer discriminator updates for each generator update.</p>
-    <h5> 5.2 Implementation Details </h5>
+    <h5> 4.2 Implementation Details </h5>
     <p>SAGAN is designed to generate 128 x 128 images. Other details are:
     </p>
     <ul>
