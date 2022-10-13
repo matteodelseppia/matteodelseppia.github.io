@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="utf-8">
+  <title>Notes on Modern Recurrent Neural Networks</title>
+  <meta name="description" content="notes on modern recurrent neural networks">
+  <meta name="author" content="Matteo Del Seppia">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+  </script>
+
+  <link href="https://fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+
+  <link rel="stylesheet" href="../css/normalize.css">
+  <link rel="stylesheet" href="../css/skeleton.css">
+  <link rel="stylesheet" href="../css/post.css">
+
+  <link rel="icon" type="image/png" href="../images/notes.png">
+
+</head>
+<body>
+
+  <div class="container">
+    <header style="margin: auto; text-align: center; margin-top: 30px;"><h3>Notes on Modern Recurrent Neural Networks</h3></header>
+    <p class="post-description">Notes on LSTMs, GRUs, Deep RNNs, biRNNs partly based on Chapter 11 of <a href="https://d2l.ai/index.html">Dive Into Deep Learning</a> book.
+    </p>
+
+    <h4> 1. Introduction </h4>
+<p>The first RNNs were trained using backpropagation like standard feedforward networks, and almost immediately researchers found out that <b>long input sequences led to vanishing/exploding gradients</b>. While some solutions to exploding gradients were discovered (e.g. gradient clipping), the vanishing gradient problem when learning long-term dependencies was more difficult to solve and required alternative approaches to the problem. One of the most successful techniques to learn long-term dependencies is the LSTM model.</p>
+<br>
+<br>
+
+<h4> 2. Long Short-Term Memory RNNs </h4>
+<p>LSTM networks come from the intuition that simple RNNs have <i>long-term memory</i> in the form of weights (the same weights causing the vanishing/exploding gradient problem). The weights are fine-tuned during training in order to embed some long-term knowledge about the data. Also, simple RNNs have <i>short-term memory</i> in the form of activation functions' outputs, passing from each layer to the successive like in feedforward networks. LSTM RNNs introduce a <i>long short-term memory</i> type of unit called <b>memory cell</b>, which has the ability to remember important long-term dependencies and forget useless long-term knowledge.</p>
+<p>Each memory cell has an internal state and has a specific fixed architecture composed of:</p>
+<ul>
+<li><b>input gate</b>: decides if a given input should alter the internal state</li>
+<li><b>forget gate</b>: decides whether the internal state should be flushed to zero</li>
+<li><b>output gate</b>: allows the internal state to impact on the cell's output</li>
+</ul>
+<p>The mechanisms for closing/opening the internal gates of each memory cell are part of the learning process of the network. </p>
+
+<h5> 2.1 Input, Forget, Output </h5>
+<p>An LSTM cell takes as inputs the sequential input at the current time step and the hidden state of the previous time step. The distinction between standard RNNs and LSTMs is that LSTMs learn to <i>regulate</i> the input from the previous hidden state so that a huge amount of useless information does not flow through the network. Three fully connected sigmoid layers compute the values for the input, forget and output gates. Additionally, an <i>input node</i> computes its output through an hyperbolic tangent activation, and the amount of output impacting on the cell is regulated by the input gate.</p>
+<p>Supposing there are h hidden units, batch size is n, and the number of inputs is d, the gates at time t are calculated as:</p>
+
+$$ I_t = \sigma(X_t W_{xi} + H_{t-1}W_{hi} + b_i), \ I_t \in \mathbb{R}^{n \times h} , \ X_t \in \mathbb{R}^{n \times d} , \ H_{t-1} \in \mathbb{R}^{n \times h} , \ W_{xi} \in \mathbb{R}^{d \times h} , \ W_{hi} \in \mathbb{R}^{h \times h} , \ b_i \in \mathbb{R}^{1 \times h} , $$
+$$ F_t = \sigma(X_t W_{xf} + H_{t-1}W_{hf} + b_f), \ I_t \in \mathbb{R}^{n \times h} , \ X_t \in \mathbb{R}^{n \times d} , \ H_{t-1} \in \mathbb{R}^{n \times h} , \ W_{xf} \in \mathbb{R}^{d \times h} , \ W_{hf} \in \mathbb{R}^{h \times h} , \ b_f \in \mathbb{R}^{1 \times h} , $$
+$$ O_t = \sigma(X_t W_{xo} + H_{t-1}W_{ho} + b_o), \ I_t \in \mathbb{R}^{n \times h} , \ X_t \in \mathbb{R}^{n \times d} , \ H_{t-1} \in \mathbb{R}^{n \times h} , \ W_{xo} \in \mathbb{R}^{d \times h} , \ W_{ho} \in \mathbb{R}^{h \times h} , \ b_o \in \mathbb{R}^{1 \times h} , $$
+<p>While the input node is calculated as such:</p>
+
+$$ \tilde{C}_t  = \tanh(X_tW_{xc} + H_{t-1}W_{hc} + b_c), \ W_{xc} \in \mathbb{R}^{d \times h}, \ W_{hc} \in \mathbb{R}^{h \times h}, \ b_c \in \mathbb{R}^{1 \times h} $$
+<p>In LSTMs the input gate regulates how much new data flows through the input node, and at the same time the forget gate decides how much of the old cell internal state has to be retained. Hence, the equation for updating a cell's internal state takes in consideration the output of the input and forget gates:</p>
+$$ C_t = F_t \odot  C_{t-1} + I_t \odot \tilde{C}_t$$
+<p>Note that if the forget gate is always 1 and the input gate is always 0 the memory cell internal state will remain constant forever because new information will never be taken in consideration when producing the cell's output. <br>
+Lastly, the output of the cell, which is the hidden state seen by successive layers, is calculated as such:</p>
+$$ H_t = O_t \odot \tanh(C_t)$$
+<p>When the output gate is close to 1, the memory cell internal state will have an impact on unhibited subsequent layers. This allows each cell to accumulate information across many steps and then suddenly impact on the network's output at a subsequent time step as soon as the output gate flips to 1.</p>
+<br>
+<br>
+<h4> 3. Gated Recurrent Units </h4>
+<p>GRU architectures were developed after the diffusion of LSTMs with the main goal of speeding up training.<br>
+In GRUs only two gates are present:</p>
+<ul>
+<li><b>reset gate</b>: controls how much of the previous state should be remembered</li>
+<li><b>update gate</b>: decides how much of the previous state should be kept into the new state</li>
+</ul>
+<p>Under the same assumptions on data dimensions we made for LSTMs, we can write:</p>
+$$ R_t = \sigma(X_t W_{xr} + H_{t-1} W_{hr} + b_r), \ W_{xr} \in \mathbb{R}^{d \times h}, \ W_{hr} \in \mathbb{R}^{h \times h}, \ b_r \in \mathbb{R}^{1 \times h} $$
+$$ Z_t = \sigma(X_t W_{xz} + H_{t-1} W_{hz} + b_z), \ W_{xz} \in \mathbb{R}^{d \times h}, \ W_{hz} \in \mathbb{R}^{h \times h}, \ b_z \in \mathbb{R}^{1 \times h} $$
+<p>In GRUs the <b>candidate hidden state</b> is calculated as:</p>
+$$ \tilde{H}_t = \tanh ( X_t W_{xh} + (R_t \odot H_{t-1})W_{hh} + b_h), \ W_{xh} \in \mathbb{R}^{d \times h}, \ W_{hh} \in \mathbb{R}^{h \times h}, \ b_h \in \mathbb{R}^{1 \times h}$$
+<p>It is called <i>candidate</i> because the update gate will decide how much of it has to be taken into account by the unit. When the inputs in the reset gate are close to 1, the network becomes a standard RNN. When the inputs in the reset gate are close to 0, the candidate hidden state is the output of a multilayer perceptron with the mini-batch at time step t as input, and any previous hidden state is reset.<br>
+
+Finally, we see the effect of the update state on the new hidden state:</p>
+$$ H_t = Z_t \odot H_{t-1} + (1-Z_t) \odot \tilde{H}_t$$
+<p>When the update gate is close to 1, the new hidden state is the same as the previous hidden state. When the update gate is close to zero, the previous hidden state is forgotten and the new hidden state is determined only by the candidate hidden state.<br>
+In short, GRUs are capable of preserving important long-term and short-term dependencies and are able to forget information that has become useless, similarly to LSTMs but with a lot less parameters, making their training faster.</p>
+
+<br>
+<br>
+<h4> 4. Deep Recurrent Neural Networks </h4>
+<p>Since we would like to retain the possibility for our network to implement complex functions linking the input at time t with the output at time t, many RNNs are deep not only in the time direction but also in the input-output direction. The standard method to do this is <b>stacking the RNNs on top of each other</b>. Each recurrent hidden layer operates on a sequential input coming from the previous layer and uses an activation function to produce a sequential output for the next (recurrent) layer. Any RNN memory cell depends both on its own value at the previous time step and the current input from the previous layer. More commonly, deep recurrent networks are horizontally extended, with layers composed of multiple parallel memory cells. Moreover, deep RNNs require considerable amount of work (such as adjusting the learning rate with a scheduler and gradient clipping) to ensure good convergence.</p>
+<br>
+<br>
+<h4> 5. Bidirectional Recurrent Neural Networks </h4>
+<p>A bidirectional RNN is implemented by two unidirectional RNN layers chained together in opposite directions and implementing a function with domain equal to codomain. For example, a bidirectional neural network can be used to predict both what value might come after a sequence of values and what value might come after a <i>reverted</i> sequence of values (or before the sequence).<br>
+Under the same assumptions as before regarding the minibatch input of sequential values, in a bidirectional neural network with h hidden units the forward and backward hidden states update equations at a certain time step are:</p>
+$$ \overrightarrow{H_t} = \phi(X_tW_{xh}^{(f)} + \overrightarrow{H}_{t-1} W_{hh}^{(f)} + b_h^{(f)})$$
+$$ \overleftarrow{H_t} = \phi(X_tW_{xh}^{(b)} + \overleftarrow{H}_{t-1} W_{hh}^{(b)} + b_h^{(b)}) $$
+$$ \phi \text{ is the activation function of the layer}$$
+$$ W_{xh}^{(f)}, \ W_{xh}^{(b)} \in \mathbb{R}^{d \times h}, \ \ \ W_{hh}^{(f)}, \ W_{hh}^{(f)} \in \mathbb{R}^{h \times h}, \ \ b_{h}^{(f)} , \ b_{h}^{(b)} \in \mathbb{R}^{1 \times h}, \ \ \overrightarrow{H}_t, \overleftarrow{H}_t \in \mathbb{R}^{n \times h}$$
+
+<p>Notice that in a bidirectional RNN <b>the weights are shared across the forward and the backward directions</b>. <br>
+The hidden state of a single memory cell in a bidirectional RNN is the concatenation of the forward and backward hidden states, and the hidden state of each cell is fed into the output layer. In deep bidirectional RNNs, the output is then fed to the next bidirectional recurrent layer, until an output for the current time step is reached:</p>
+$$ O_t = H_t W_{hq} + b_q, \ \ W_{hq} \in \mathbb{R}^{2h \times q}, \ b_q \in \mathbb{R}^{1 \times q}$$
+<br>
+<br>
+
+<h4> 6. Encoder-Decoder Architecture </h4>
+<p>In sequence-to-sequence problems like machine translation and automated question answering, the standard approach to handle this sort of unaligned, length-varying data is using an encoder-decoder model architecture. <br>
+An encoder is trained to transform a variable-length input into a <b>fixed-shape representation called <i>state</i></b>, while the decoder takes the state as input and <i>decodes</i> the state into an appropriate output (the correct translation of a sentence, for example).</p>
+<br>
+<br>
+<br>
+</div>
+</body>
+</html>
