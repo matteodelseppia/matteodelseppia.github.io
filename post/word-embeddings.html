@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="utf-8">
+  <title>Notes on Word Embeddings</title>
+  <meta name="description" content="notes on word embeddings">
+  <meta name="author" content="Matteo Del Seppia">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+  </script>
+
+  <link href="https://fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+
+  <link rel="stylesheet" href="../css/normalize.css">
+  <link rel="stylesheet" href="../css/skeleton.css">
+  <link rel="stylesheet" href="../css/post.css">
+
+  <link rel="icon" type="image/png" href="../images/notes.png">
+
+</head>
+<body>
+
+  <div class="container">
+    <header style="margin: auto; text-align: center; margin-top: 30px;"><h3>Notes on Word Embeddings</h3></header>
+    <p class="post-description">Notes on Word2Vec based on the <a href="https://arxiv.org/pdf/1301.3781v3.pdf">original paper</a> by Mikolov et al. ,
+        FastText based on the <a href="https://arxiv.org/abs/1607.04606v2">original paper</a> by Bojanowski et al. , GloVe based on the <a href="https://arxiv.org/pdf/1404.1100.pdf">original paper</a> by Pennington et al. ,
+        ELMo based on the <a href="https://arxiv.org/abs/1802.05365v2">original paper</a> by Peters et al.
+      </p>
+      <h4> 1. Word2Vec </h4>
+      <p>The original Word2Vec paper proposed two very successful techniques to learn high-quality word embeddings from huge datasets with billions of words (vocabulary in the order of millions). </p>
+      <p>The first architecture proposed is the <b>continuous bag of words</b>. In CBoW, the text is divided in adjacent bag of words of a certain fixed window size. In each bag of words there is a <i>center word</i> (target), and the model tries to predict the target by looking only at the other words in the bag. 
+      The architecture of CBoW is the following:</p>
+      <ul>
+      <li>the network takes as inputs the one hot encodings of the words in the surroundings of the target</li>
+      <li>the input matrix, which is very sparse, is presented to an embedding layer containing a big matrix of weights (embeddings). The goal of this layer is simply to select the embeddings of the surrounding words so they can pass to the next layer. This is done via matrix multiplication </li>
+      <li>a third layer averages the columns of matrix of embeddings (<i>projection</i>)</li>
+      <li>finally, the projection is transformed by a softmax layer in a one hot encoded vector, predicting the target word</li>
+      </ul>
+      
+      <p>The second architecture proposed is the <b>continuous skip-gram model</b>, which is the inverse of CBoW. The goal now is to predict the surrounding words given a center word. The architecture of such a model can be implemented following the core idea of the previous model:</p>
+      <ul>
+      <li>the inputs are a pair of one hot encodings, one for the target word and the other for the word we want want to predict as surrounding</li>
+      <li>each word passes through an embedding layer containing weights randomly initialized</li>
+      <li>the two embeddings coming from the previous layer are merged through a dot product between vectors </li>
+      <li>a sigmoid outputs 0 (the two words are unlikely to be found in the same bag of words) or 1 (the two words are likely related to each other)</li>
+      </ul>
+      
+      <br>
+      <br>
+      
+      <h4> 2. FastText </h4>
+      <p>FastText proposes to learn word embeddings while taking into account morphology, intended as a sum of subword units called <i>n-grams</i>. Its goal is to enhance the original idea of the skipgram model by considering also the <i>internal structure</i> of words, similarly to what we have seen previously with the token representations of ELMo.<br>
+      Each word is represented by a <i>bag of character n-grams</i>. Special symbols are added at the beginning and ending of words, allowing to distinguish prefixes and suffixes. Also, the entire word itself is included in the set of its n-grams. For example with n=3 the word <i>clown</i> is represented by:</p>
+      $$ \text{<cl} , \ \text{clo} , \ \text{low} , \ \text{own} , \ \text{wn>},  \ \text{<clown>}   $$
+      <p>Supposing there exists a dictionary of n-grams of a certain size G, we can denote as</p>
+      $$ \mathcal{G}_w \subset \{ 1, ..., G\}$$
+      <p>the set of n-grams appearing in a certain word w. Each n-gram g is associated to a vector representation z<sub>g</sub>, and a word is represented as the sum of its n-grams vector representations. Following the exact same way we could compute the similarity between words in the skip-gram model, we can use a scoring function that quantifies the (unnormalized) probability for a certain word c to appear in the context of word w:</p>
+      $$ s(w, c) = \sum_{g \in \mathcal{G}_w}z_g^T v_c$$
+      <p>This model allows sharing the representations across words, because the same n-grams will have the same representations and will be used by many different words. This allows to learn reliable representation for words that occur rarely but have a meaning that could be inferred by their n-grams.</p>
+      <br>
+      <br>
+      
+      <h4>3. GloVe </h4>
+      <p>Given a word co-occurrence matrix for the whole corpus, measured using a certain window size for the bag of words, it is intuitive that co-occurrence probabilities can express the similarity relationship between words. Given a ratio of co-occurrence probabilities:</p>
+      $$ p_{ij} / p_{ik} \ , \ w_i \text{ center word}, \  w_j, w_k \text{ context words}  $$
+      <p>we want to model this ratio for any triplet of words using some function F that can be learned by a neural network:</p>
+      $$ F(u_j, u_k, v_i) \approx \frac{p_{ij}}{p_{ik}}$$
+      <p>Among many possible choices for the form of F, we want it to be a scalar function, since the ratio of probabilities is a scalar:</p>
+      $$ F(u_j , u_k, v_i) = F((u_j-u_k)^Tv_i)$$
+      <p>Also, switching the two context words should produce the inverse ratio, so we have to impose:</p>
+      $$ F(a) = 1/F(-a)$$
+      <p>A function satisfying this conditions is the exponential:</p>
+      $$ F(u_j, u_k, v_i) = F((u_j-u_k)^Tv_i)= \frac{e^{u_j^T v_i}}{e^{u_k^T v_i}} \approx \frac{p_{ij}}{p_{ik}}$$
+      <p>And since we know how to calculate the conditional probabilities starting from the occurrences of the matrix:</p>
+      $$ p_{ij} = \frac{x_{ij}}{x_i} , \ e^{u_j^Tv_i} \approx \alpha p_{ij} \implies u_j^Tv_i \approx \log\alpha + \log{x_{ij}} - \log x_i $$
+      
+      <p>where &alpha; is a constant. Moreover, we can use additional bias terms to model the log-occurrences of the <i>i-th</i> word and log-&alpha; :</p>
+      $$ u_j^T v_i + b_i + c_j \approx \log x_{ij}$$
+      <p>and measuring the squared error with respect to the weights we obtain the GloVe loss function used to calculate the embeddings:</p>
+      $$ J(\theta) =\sum_{i=1}^{|V|} \sum_{j=1}^{|V|} h(x_{ij}) \bigg[u_j^Tv_i + b_i + b_j -\log(x_{ij}) \bigg]^2, \ \ h(x_{ij}) \text{ is a weighting function}$$
+      <p>Note that unlike Word2Vec that fits the asymmetric conditional probability <i>p<sub>ij</sub></i>, GloVe fits the symmetric logarithm of two words co-occurrences for each pair of words within the context window size, taking in consideration the overall corpus statistics. <b>Therefore, the center word embedding and the context word embedding of any word are mathematically equivalent in GloVe.</b> In practice, due to different initialization values, the same word may still get different values in these two vectors after training, thus GloVe sums them up as the output vector.</p>
+      <br>
+      <br>
+      
+      <h4> 4. ELMo </h4>
+      <p>ELMo word embeddings are functions of an entire input sentence, not just bags of words of length equal to the window size. This means that the same word in ELMo may have <b>many context-sensitive different embeddings</b>. The embeddings are computed via a <i>bidirectional language model</i>.<br>
+      Given a sequence of N tokens, a <i>forward language model</i> computes the probability of the sequence:</p>
+      $$ P(t_1, ..., t_N) = \prod_{k=1}^N P(t_k|t_1, ..., t_{k-1})$$
+      <p>Each conditioned probability is computed in two steps:</p>
+      <ul>
+      <li>first, a context-independent token representation is computed via a CNN over characters; this allows the model to automatically grasp the similarity between words like <i>beauty</i> and <i>beautiful</i> even without computing the embeddings</li>
+      <li>secondly, the token representation is fed to an LSTM with L hidden layers, and the output of the last hidden layer (the embedding of a certain word coming after other k words) is used to predict the next token via a softmax output
+      </ul>
+      <p>A <i>backward language model</i> has the same architecture of a forward model, but its task is to predict the preceding token given a sequence of k tokens.<br>
+      ELMo's embeddings are computed using a biLM that combines both the forward and the backward language models. The ELMo loss function requires both the forward and the backward directions to be jointly optimized via negative log-likelihood minimization. Notice that the parameters of hidden layers of the forward and backward models are not shared. After training the biLSTM network, each word in the corpus is associated to possibly multiple context-dependent embeddings (this is more clear if we think at how LSTMs work).</p>
+<br>
+<br>      
+</div>
+</body>
+</html>
