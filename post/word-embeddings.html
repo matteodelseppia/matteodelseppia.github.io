@@ -55,7 +55,9 @@
       <h4> 2. FastText </h4>
       <p>FastText proposes to learn word embeddings while taking into account morphology, intended as a sum of subword units called <i>n-grams</i>. Its goal is to enhance the original idea of the skipgram model by considering also the <i>internal structure</i> of words, similarly to what we have seen previously with the token representations of ELMo.<br>
       Each word is represented by a <i>bag of character n-grams</i>. Special symbols are added at the beginning and ending of words, allowing to distinguish prefixes and suffixes. Also, the entire word itself is included in the set of its n-grams. For example with n=3 the word <i>clown</i> is represented by:</p>
-      $$ \text{<cl} , \ \text{clo} , \ \text{low} , \ \text{own} , \ \text{wn>},  \ \text{<clown>}   $$
+      
+      $$ \text{< cl} , \ \text{clo} , \ \text{low} , \ \text{own} , \ \text{wn>},  \ \text{< clown >}   $$
+
       <p>Supposing there exists a dictionary of n-grams of a certain size G, we can denote as</p>
       $$ \mathcal{G}_w \subset \{ 1, ..., G\}$$
       <p>the set of n-grams appearing in a certain word w. Each n-gram g is associated to a vector representation z<sub>g</sub>, and a word is represented as the sum of its n-grams vector representations. Following the exact same way we could compute the similarity between words in the skip-gram model, we can use a scoring function that quantifies the (unnormalized) probability for a certain word c to appear in the context of word w:</p>
