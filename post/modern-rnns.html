@@ -93,7 +93,7 @@ Under the same assumptions as before regarding the minibatch input of sequential
 $$ \overrightarrow{H_t} = \phi(X_tW_{xh}^{(f)} + \overrightarrow{H}_{t-1} W_{hh}^{(f)} + b_h^{(f)})$$
 $$ \overleftarrow{H_t} = \phi(X_tW_{xh}^{(b)} + \overleftarrow{H}_{t-1} W_{hh}^{(b)} + b_h^{(b)}) $$
 $$ \phi \text{ is the activation function of the layer}$$
-$$ W_{xh}^{(f)}, \ W_{xh}^{(b)} \in \mathbb{R}^{d \times h}, \ \ \ W_{hh}^{(f)}, \ W_{hh}^{(f)} \in \mathbb{R}^{h \times h}, \ \ b_{h}^{(f)} , \ b_{h}^{(b)} \in \mathbb{R}^{1 \times h}, \ \ \overrightarrow{H}_t, \overleftarrow{H}_t \in \mathbb{R}^{n \times h}$$
+$$ W_{xh}^{(f)}, \ W_{xh}^{(b)} \in \mathbb{R}^{d \times h}, \ \ \ W_{hh}^{(f)}, \ W_{hh}^{(b)} \in \mathbb{R}^{h \times h}, \ \ b_{h}^{(f)} , \ b_{h}^{(b)} \in \mathbb{R}^{1 \times h}, \ \ \overrightarrow{H}_t, \overleftarrow{H}_t \in \mathbb{R}^{n \times h}$$
 
 <p>Notice that in a bidirectional RNN <b>the weights are shared across the forward and the backward directions</b>. <br>
 The hidden state of a single memory cell in a bidirectional RNN is the concatenation of the forward and backward hidden states, and the hidden state of each cell is fed into the output layer. In deep bidirectional RNNs, the output is then fed to the next bidirectional recurrent layer, until an output for the current time step is reached:</p>
